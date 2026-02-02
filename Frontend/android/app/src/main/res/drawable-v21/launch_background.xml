@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Enhanced splash screen for Eco Daily Score (Android 5.0+) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background gradient -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#2E7D32"
+                android:centerColor="#388E3C"
+                android:endColor="#81C784"
+                android:type="linear" />
+        </shape>
+    </item>
+
+    <!-- App icon/logo centered with slight scale -->
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher" />
+    </item>
+
+    <!-- Subtle bottom spacing for branding -->
+    <item android:bottom="80dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+</layer-list>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Eco Daily Score brand colors for dark mode -->
+    <color name="primary_green">#2E7D32</color>
+    <color name="secondary_green">#81C784</color>
+    <color name="accent_green">#4CAF50</color>
+    <color name="splash_background_start">#1B5E20</color>
+    <color name="splash_background_center">#2E7D32</color>
+    <color name="splash_background_end">#66BB6A</color>
+</resources>

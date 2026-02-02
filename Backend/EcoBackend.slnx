@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+    <File Path="MIGRATION_GUIDE.md" />
+    <File Path="GETTING_STARTED.md" />
+    <File Path=".gitignore" />
+  </Folder>
+  <Project Path="EcoBackend.API\EcoBackend.API.csproj" Type="C#" />
+  <Project Path="EcoBackend.Core\EcoBackend.Core.csproj" Type="C#" />
+  <Project Path="EcoBackend.Infrastructure\EcoBackend.Infrastructure.csproj" Type="C#" />
+  <Properties Name="Configuration">
+    <Property Name="Debug|Any CPU" />
+    <Property Name="Release|Any CPU" />
+  </Properties>
+</Solution>

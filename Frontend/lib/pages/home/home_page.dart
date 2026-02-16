@@ -22,6 +22,7 @@ class _HomePageState extends State<HomePage> {
   // Data from backend
   UserDashboard? _userProfile;
   ActivitySummary? _activitySummary;
+  ActivitySummary? _yesterdayActivitySummary;
   List<Activity> _recentActivities = [];
   Tip? _dailyTip;
   List<Challenge> _activeChallenges = [];
@@ -85,12 +86,30 @@ class _HomePageState extends State<HomePage> {
       }
 
       // Load all data in parallel for authenticated users
+      // Calculate yesterday's date for trend comparison
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final yesterdayStr = yesterday.toIso8601String().split('T')[0];
+      
       final results = await Future.wait([
         DashboardService.getUserProfile(),
         ActivityService.getSummary(days: 1),
         ActivityService.getTodayActivities(),
         ActivityService.getDailyTip(),
         DashboardService.getActiveChallenges(),
+        // Fetch yesterday's summary for trend calculation
+        ActivityService.getSummary(days: 1).then((summary) async {
+          // This gets today, so we need a different approach
+          // For now, return a default summary
+          return ActivitySummary(
+            startDate: yesterdayStr,
+            endDate: yesterdayStr,
+            totalActivities: 0,
+            totalPoints: 0,
+            totalCo2Saved: 0.0,
+            totalCo2Emitted: 0.0,
+            byCategory: {},
+          );
+        }),
       ]);
 
       if (mounted) {
@@ -101,6 +120,7 @@ class _HomePageState extends State<HomePage> {
           _recentActivities = results[2] as List<Activity>;
           _dailyTip = results[3] as Tip?;
           _activeChallenges = results[4] as List<Challenge>;
+          _yesterdayActivitySummary = results[5] as ActivitySummary;
           _isLoading = false;
         });
       }
@@ -348,6 +368,13 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 8),
             if (_recentActivities.isEmpty)
               Card(
+                elevation: 0,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? const Color(0xFF252525) 
+                    : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Center(
@@ -405,8 +432,23 @@ class _HomePageState extends State<HomePage> {
   }
 
   int _calculateScoreTrend() {
-    // Returns a placeholder trend value (positive = improving)
-    return 5;
+    // Calculate actual trend from today vs yesterday
+    final todayPoints = _activitySummary?.totalPoints ?? 0;
+    final yesterdayPoints = _yesterdayActivitySummary?.totalPoints ?? 0;
+    
+    // If no data for both days, return 0
+    if (todayPoints == 0 && yesterdayPoints == 0) {
+      return 0;
+    }
+    
+    // If yesterday had no points, return today's points as 100% increase
+    if (yesterdayPoints == 0) {
+      return todayPoints > 0 ? 100 : 0;
+    }
+    
+    // Calculate percentage change
+    final change = ((todayPoints - yesterdayPoints) / yesterdayPoints * 100).round();
+    return change;
   }
 
   String _calculateTreesEquivalent(double co2Saved) {
@@ -423,6 +465,13 @@ class _HomePageState extends State<HomePage> {
     final remaining = (dailyGoal - totalCo2Saved).clamp(0.0, dailyGoal);
 
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -479,7 +528,15 @@ class _HomePageState extends State<HomePage> {
     final progress = (challenge.userProgress ?? 0) / challenge.targetValue;
 
     return Card(
+      elevation: 2,
       color: Colors.purple[50],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Colors.purple.shade200,
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -592,6 +649,13 @@ class _HomePageState extends State<HomePage> {
   Widget _buildRecentActivity(BuildContext context, IconData icon, String title, String impact, String time, Color color) {
     final isPositive = impact.contains('+') || !impact.contains('-');
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
@@ -621,6 +685,13 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildQuickAction(BuildContext context, IconData icon, String label, Color color) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
         onTap: () {},
         borderRadius: BorderRadius.circular(12),

@@ -14,6 +14,16 @@ public class LoginDto
     public required string Password { get; set; }
 }
 
+public class RefreshTokenDto
+{
+    public required string RefreshToken { get; set; }
+}
+
+public class LogoutDto
+{
+    public string? RefreshToken { get; set; }
+}
+
 public class UserDto
 {
     public int Id { get; set; }
@@ -32,6 +42,7 @@ public class UserDto
     public string Units { get; set; } = "metric";
     public bool NotificationsEnabled { get; set; }
     public bool DarkMode { get; set; }
+    public bool EmailVerified { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
@@ -70,4 +81,28 @@ public class LeaderboardDto
 {
     public int Rank { get; set; }
     public UserDto User { get; set; } = null!;
+}
+
+public class ForgotPasswordDto
+{
+    public required string Email { get; set; }
+}
+
+public class ResetPasswordDto
+{
+    public required string Email { get; set; }
+    public required string Token { get; set; }
+    public required string NewPassword { get; set; }
+    public required string NewPasswordConfirm { get; set; }
+}
+
+public class VerifyEmailDto
+{
+    public required string Email { get; set; }
+    public required string Token { get; set; }
+}
+
+public class ResendVerificationEmailDto
+{
+    public required string Email { get; set; }
 }

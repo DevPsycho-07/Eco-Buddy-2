@@ -75,6 +75,13 @@ class _HistoryPageState extends State<HistoryPage> {
                       ),
                     ),
                     ...((day['activities'] as List).map((activity) => Card(
+                      elevation: 0,
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? const Color(0xFF252525) 
+                          : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: CircleAvatar(

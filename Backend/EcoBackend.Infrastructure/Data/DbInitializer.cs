@@ -1,5 +1,6 @@
 using EcoBackend.Core.Entities;
 using EcoBackend.Infrastructure.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcoBackend.Infrastructure.Data;
@@ -221,6 +222,290 @@ public static class DbInitializer
 
         await context.SaveChangesAsync();
 
+        // Seed Admin User
+        await SeedAdminUserAsync(context);
+
         Console.WriteLine("✅ Database seeded successfully!");
+    }
+
+    private static async Task SeedAdminUserAsync(EcoDbContext context)
+    {
+        var adminEmail = "admin@eco.com";
+        var existingAdmin = await context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+
+        if (existingAdmin != null)
+        {
+            Console.WriteLine($"Admin user {adminEmail} already exists, skipping...");
+            return;
+        }
+
+        var admin = new User
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            EmailConfirmed = true,
+            FirstName = "Admin",
+            LastName = "User",
+            Bio = "🌍 Eco warrior and sustainability enthusiast",
+            EcoScore = 850,
+            TotalCO2Saved = 125.5,
+            CurrentStreak = 15,
+            LongestStreak = 45,
+            Level = 8,
+            ExperiencePoints = 6500,
+            Units = "metric",
+            NotificationsEnabled = true,
+            DarkMode = false,
+            LocationTracking = true,
+            ActivityRecognition = true,
+            EmailVerified = true,
+            CreatedAt = DateTime.UtcNow.AddDays(-90),
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        var userStore = new Microsoft.AspNetCore.Identity.EntityFrameworkCore.UserStore<User, IdentityRole<int>, EcoDbContext, int>(context);
+        var hasher = new PasswordHasher<User>();
+        admin.PasswordHash = hasher.HashPassword(admin, "Admin@123");
+
+        await userStore.CreateAsync(admin);
+        await context.SaveChangesAsync();
+
+        var userId = admin.Id;
+        Console.WriteLine($"✓ Created admin user: {adminEmail}");
+
+        // Add goals
+        var goals = new List<UserGoal>
+        {
+            new()
+            {
+                UserId = userId,
+                Title = "Walk 100 km",
+                Description = "Complete 100 km of walking activities",
+                TargetValue = 100,
+                CurrentValue = 65,
+                Unit = "km",
+                IsCompleted = false,
+                Deadline = DateTime.UtcNow.AddMonths(1),
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            },
+            new()
+            {
+                UserId = userId,
+                Title = "Eat Vegan 20 Days",
+                Description = "Log vegan meals for 20 days",
+                TargetValue = 20,
+                CurrentValue = 12,
+                Unit = "days",
+                IsCompleted = false,
+                Deadline = DateTime.UtcNow.AddMonths(1),
+                CreatedAt = DateTime.UtcNow.AddDays(-30)
+            },
+            new()
+            {
+                UserId = userId,
+                Title = "Save 500 kg CO2",
+                Description = "Reduce carbon emissions by 500 kg",
+                TargetValue = 500,
+                CurrentValue = 350,
+                Unit = "kg",
+                IsCompleted = false,
+                Deadline = DateTime.UtcNow.AddMonths(2),
+                CreatedAt = DateTime.UtcNow.AddDays(-60)
+            }
+        };
+        context.UserGoals.AddRange(goals);
+        await context.SaveChangesAsync();
+        Console.WriteLine($"✓ Added 3 goals for admin user");
+
+        // Add daily scores for the past 15 days
+        var dailyScores = new List<DailyScore>();
+        for (int i = 15; i > 0; i--)
+        {
+            var scoreDate = DateTime.UtcNow.AddDays(-i).Date;
+            dailyScores.Add(new DailyScore
+            {
+                UserId = userId,
+                Date = scoreDate,
+                Score = 75 + (i % 30),
+                CO2Emitted = 5.5 - (i % 3),
+                CO2Saved = 2.5 + (i % 4),
+                Steps = 8000 + (i * 200)
+            });
+        }
+        context.DailyScores.AddRange(dailyScores);
+        await context.SaveChangesAsync();
+        Console.WriteLine($"✓ Added 15 daily scores for admin user");
+
+        // Add activities
+        var categories = await context.ActivityCategories.ToListAsync();
+        var activityTypes = await context.ActivityTypes.ToListAsync();
+
+        var activities = new List<Activity>();
+        if (activityTypes.Count > 0)
+        {
+            activities = new List<Activity>
+            {
+                new()
+                {
+                    UserId = userId,
+                    ActivityTypeId = activityTypes.FirstOrDefault(at => at.Name == "Walking")?.Id ?? activityTypes.First().Id,
+                    Quantity = 5,
+                    Unit = "km",
+                    Notes = "Morning walk in the park",
+                    CO2Impact = 0,
+                    PointsEarned = 50,
+                    LocationName = "Central Park",
+                    ActivityDate = DateTime.UtcNow.AddDays(-1),
+                    ActivityTime = new TimeSpan(6, 30, 0),
+                    CreatedAt = DateTime.UtcNow.AddDays(-1)
+                },
+                new()
+                {
+                    UserId = userId,
+                    ActivityTypeId = activityTypes.FirstOrDefault(at => at.Name == "Cycling")?.Id ?? activityTypes.First().Id,
+                    Quantity = 10,
+                    Unit = "km",
+                    Notes = "Commute to work by bike",
+                    CO2Impact = 0,
+                    PointsEarned = 150,
+                    LocationName = "Downtown",
+                    ActivityDate = DateTime.UtcNow.AddDays(-1),
+                    ActivityTime = new TimeSpan(8, 0, 0),
+                    CreatedAt = DateTime.UtcNow.AddDays(-1)
+                },
+                new()
+                {
+                    UserId = userId,
+                    ActivityTypeId = activityTypes.FirstOrDefault(at => at.Name == "Vegan Meal")?.Id ?? activityTypes.First().Id,
+                    Quantity = 1,
+                    Unit = "meal",
+                    Notes = "Delicious buddha bowl",
+                    CO2Impact = -2,
+                    PointsEarned = 25,
+                    ActivityDate = DateTime.UtcNow.AddDays(-1),
+                    ActivityTime = new TimeSpan(12, 0, 0),
+                    CreatedAt = DateTime.UtcNow.AddDays(-1)
+                },
+                new()
+                {
+                    UserId = userId,
+                    ActivityTypeId = activityTypes.FirstOrDefault(at => at.Name == "Local Produce")?.Id ?? activityTypes.First().Id,
+                    Quantity = 1,
+                    Unit = "purchase",
+                    Notes = "Bought organic local vegetables",
+                    CO2Impact = -1.5,
+                    PointsEarned = 20,
+                    LocationName = "Farmers Market",
+                    ActivityDate = DateTime.UtcNow.AddDays(-2),
+                    ActivityTime = new TimeSpan(9, 0, 0),
+                    CreatedAt = DateTime.UtcNow.AddDays(-2)
+                },
+                new()
+                {
+                    UserId = userId,
+                    ActivityTypeId = activityTypes.FirstOrDefault(at => at.Name == "Public Transit")?.Id ?? activityTypes.First().Id,
+                    Quantity = 15,
+                    Unit = "km",
+                    Notes = "Bus ride to downtown",
+                    CO2Impact = 0.089 * 15,
+                    PointsEarned = 180,
+                    ActivityDate = DateTime.UtcNow.AddDays(-3),
+                    ActivityTime = new TimeSpan(17, 30, 0),
+                    CreatedAt = DateTime.UtcNow.AddDays(-3)
+                }
+            };
+            context.Activities.AddRange(activities);
+            await context.SaveChangesAsync();
+            Console.WriteLine($"✓ Added 5 activities for admin user");
+        }
+
+        // Add badges
+        var badges = await context.Badges.ToListAsync();
+        if (badges.Count >= 5)
+        {
+            var userBadges = new List<UserBadge>
+            {
+                new() { UserId = userId, BadgeId = badges.FirstOrDefault(b => b.Name == "First Steps")?.Id ?? badges[0].Id, EarnedAt = DateTime.UtcNow.AddDays(-80) },
+                new() { UserId = userId, BadgeId = badges.FirstOrDefault(b => b.Name == "Walker")?.Id ?? badges[1].Id, EarnedAt = DateTime.UtcNow.AddDays(-60) },
+                new() { UserId = userId, BadgeId = badges.FirstOrDefault(b => b.Name == "Cyclist")?.Id ?? badges[2].Id, EarnedAt = DateTime.UtcNow.AddDays(-50) },
+                new() { UserId = userId, BadgeId = badges.FirstOrDefault(b => b.Name == "Vegan Day")?.Id ?? badges[3].Id, EarnedAt = DateTime.UtcNow.AddDays(-40) },
+                new() { UserId = userId, BadgeId = badges.FirstOrDefault(b => b.Name == "Recycler")?.Id ?? badges[4].Id, EarnedAt = DateTime.UtcNow.AddDays(-30) }
+            };
+            context.UserBadges.AddRange(userBadges);
+            await context.SaveChangesAsync();
+            Console.WriteLine($"✓ Added 5 badges for admin user");
+        }
+
+        // Add trips
+        var trips = new List<Trip>
+        {
+            new()
+            {
+                UserId = userId,
+                TransportMode = "cycling",
+                DistanceKm = 12,
+                DurationMinutes = 45,
+                StartLocation = "Home",
+                StartLatitude = 40.7128,
+                StartLongitude = -74.0060,
+                EndLocation = "Office",
+                EndLatitude = 40.7580,
+                EndLongitude = -73.9855,
+                CO2Emitted = 0,
+                CO2Saved = 2.52,
+                TripDate = DateTime.UtcNow.AddDays(-1),
+                StartTime = new TimeSpan(8, 0, 0),
+                EndTime = new TimeSpan(8, 45, 0),
+                IsAutoDetected = false,
+                ConfidenceScore = 1.0,
+                CreatedAt = DateTime.UtcNow.AddDays(-1)
+            },
+            new()
+            {
+                UserId = userId,
+                TransportMode = "walking",
+                DistanceKm = 2,
+                DurationMinutes = 25,
+                StartLocation = "Office",
+                StartLatitude = 40.7580,
+                StartLongitude = -73.9855,
+                EndLocation = "Cafe",
+                EndLatitude = 40.7614,
+                EndLongitude = -73.9776,
+                CO2Emitted = 0,
+                CO2Saved = 0.42,
+                TripDate = DateTime.UtcNow.AddDays(-1),
+                StartTime = new TimeSpan(12, 30, 0),
+                EndTime = new TimeSpan(12, 55, 0),
+                IsAutoDetected = false,
+                ConfidenceScore = 1.0,
+                CreatedAt = DateTime.UtcNow.AddDays(-1)
+            }
+        };
+        context.Trips.AddRange(trips);
+        await context.SaveChangesAsync();
+        Console.WriteLine($"✓ Added 2 trips for admin user");
+
+        // Add travel summary
+        var travelSummary = new TravelSummary
+        {
+            UserId = userId,
+            Date = DateTime.UtcNow.Date,
+            WalkingKm = 5,
+            CyclingKm = 12,
+            PublicTransitKm = 0,
+            CarKm = 0,
+            OtherKm = 0,
+            TotalKm = 17,
+            TotalTrips = 3,
+            TotalCO2Emitted = 0,
+            TotalCO2Saved = 3.5,
+            Steps = 8500
+        };
+        context.TravelSummaries.Add(travelSummary);
+        await context.SaveChangesAsync();
+        Console.WriteLine($"✓ Added travel summary for admin user");
+
+        Console.WriteLine($"✅ Admin user {adminEmail} seeded successfully with dummy data!");
     }
 }

@@ -186,6 +186,346 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Badges");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            BadgeType = "transport",
+                            Description = "Log your first walking activity",
+                            Icon = "🚶",
+                            IsActive = true,
+                            Name = "First Steps",
+                            PointsReward = 10,
+                            RequirementCategory = "walking",
+                            RequirementType = "activities_count",
+                            RequirementValue = 1.0
+                        },
+                        new
+                        {
+                            Id = 2,
+                            BadgeType = "transport",
+                            Description = "Walk a total of 10 km",
+                            Icon = "🚶",
+                            IsActive = true,
+                            Name = "Walker",
+                            PointsReward = 25,
+                            RequirementCategory = "walking",
+                            RequirementType = "distance",
+                            RequirementValue = 10.0
+                        },
+                        new
+                        {
+                            Id = 3,
+                            BadgeType = "transport",
+                            Description = "Cycle a total of 20 km",
+                            Icon = "🚲",
+                            IsActive = true,
+                            Name = "Cyclist",
+                            PointsReward = 30,
+                            RequirementCategory = "cycling",
+                            RequirementType = "distance",
+                            RequirementValue = 20.0
+                        },
+                        new
+                        {
+                            Id = 4,
+                            BadgeType = "transport",
+                            Description = "Use public transit 20 times",
+                            Icon = "🚌",
+                            IsActive = true,
+                            Name = "Transit Pro",
+                            PointsReward = 35,
+                            RequirementCategory = "public_transit",
+                            RequirementType = "activities_count",
+                            RequirementValue = 20.0
+                        },
+                        new
+                        {
+                            Id = 5,
+                            BadgeType = "transport",
+                            Description = "Run a total of 50 km",
+                            Icon = "🏃",
+                            IsActive = true,
+                            Name = "Marathon Runner",
+                            PointsReward = 50,
+                            RequirementCategory = "running",
+                            RequirementType = "distance",
+                            RequirementValue = 50.0
+                        },
+                        new
+                        {
+                            Id = 6,
+                            BadgeType = "transport",
+                            Description = "Use eco-friendly transport 50 times",
+                            Icon = "🌍",
+                            IsActive = true,
+                            Name = "Eco Commuter",
+                            PointsReward = 100,
+                            RequirementCategory = "eco_transport",
+                            RequirementType = "activities_count",
+                            RequirementValue = 50.0
+                        },
+                        new
+                        {
+                            Id = 7,
+                            BadgeType = "food",
+                            Description = "Log vegan for a whole day",
+                            Icon = "🌱",
+                            IsActive = true,
+                            Name = "Vegan Day",
+                            PointsReward = 20,
+                            RequirementCategory = "vegan",
+                            RequirementType = "activities_count",
+                            RequirementValue = 1.0
+                        },
+                        new
+                        {
+                            Id = 8,
+                            BadgeType = "food",
+                            Description = "Eat vegan for 7 consecutive days",
+                            Icon = "🥬",
+                            IsActive = true,
+                            Name = "Vegan Week",
+                            PointsReward = 60,
+                            RequirementCategory = "vegan",
+                            RequirementType = "streak",
+                            RequirementValue = 7.0
+                        },
+                        new
+                        {
+                            Id = 9,
+                            BadgeType = "food",
+                            Description = "Buy local produce 10 times",
+                            Icon = "🥕",
+                            IsActive = true,
+                            Name = "Local Hero",
+                            PointsReward = 30,
+                            RequirementCategory = "local",
+                            RequirementType = "activities_count",
+                            RequirementValue = 10.0
+                        },
+                        new
+                        {
+                            Id = 10,
+                            BadgeType = "food",
+                            Description = "Log vegetarian meals for 5 days",
+                            Icon = "🥗",
+                            IsActive = true,
+                            Name = "Vegetarian",
+                            PointsReward = 40,
+                            RequirementCategory = "vegetarian",
+                            RequirementType = "streak",
+                            RequirementValue = 5.0
+                        },
+                        new
+                        {
+                            Id = 11,
+                            BadgeType = "food",
+                            Description = "Log 15 zero waste cooking activities",
+                            Icon = "♻️",
+                            IsActive = true,
+                            Name = "Zero Waste Chef",
+                            PointsReward = 50,
+                            RequirementCategory = "zero_waste",
+                            RequirementType = "activities_count",
+                            RequirementValue = 15.0
+                        },
+                        new
+                        {
+                            Id = 12,
+                            BadgeType = "energy",
+                            Description = "Log solar panelling 30 times",
+                            Icon = "☀️",
+                            IsActive = true,
+                            Name = "Energy Saver",
+                            PointsReward = 75,
+                            RequirementCategory = "solar",
+                            RequirementType = "activities_count",
+                            RequirementValue = 30.0
+                        },
+                        new
+                        {
+                            Id = 13,
+                            BadgeType = "energy",
+                            Description = "Switch to LED bulbs 5 times",
+                            Icon = "💡",
+                            IsActive = true,
+                            Name = "Light Master",
+                            PointsReward = 35,
+                            RequirementCategory = "led",
+                            RequirementType = "activities_count",
+                            RequirementValue = 5.0
+                        },
+                        new
+                        {
+                            Id = 14,
+                            BadgeType = "energy",
+                            Description = "Document 20 energy saving actions",
+                            Icon = "⚡",
+                            IsActive = true,
+                            Name = "Power Manager",
+                            PointsReward = 60,
+                            RequirementCategory = "power_saving",
+                            RequirementType = "activities_count",
+                            RequirementValue = 20.0
+                        },
+                        new
+                        {
+                            Id = 15,
+                            BadgeType = "energy",
+                            Description = "Use renewable energy sources for 10 days",
+                            Icon = "🌊",
+                            IsActive = true,
+                            Name = "Renewable Champion",
+                            PointsReward = 80,
+                            RequirementCategory = "renewable",
+                            RequirementType = "streak",
+                            RequirementValue = 10.0
+                        },
+                        new
+                        {
+                            Id = 16,
+                            BadgeType = "recycling",
+                            Description = "Log 15 recycling activities",
+                            Icon = "♻️",
+                            IsActive = true,
+                            Name = "Recycling Hero",
+                            PointsReward = 40,
+                            RequirementCategory = "recycling",
+                            RequirementType = "activities_count",
+                            RequirementValue = 15.0
+                        },
+                        new
+                        {
+                            Id = 17,
+                            BadgeType = "recycling",
+                            Description = "Recycle for 10 consecutive days",
+                            Icon = "🛡️",
+                            IsActive = true,
+                            Name = "Waste Warrior",
+                            PointsReward = 70,
+                            RequirementCategory = "recycling",
+                            RequirementType = "streak",
+                            RequirementValue = 10.0
+                        },
+                        new
+                        {
+                            Id = 18,
+                            BadgeType = "recycling",
+                            Description = "Log 20 upcycling activities",
+                            Icon = "🎨",
+                            IsActive = true,
+                            Name = "Upcycler",
+                            PointsReward = 55,
+                            RequirementCategory = "upcycling",
+                            RequirementType = "activities_count",
+                            RequirementValue = 20.0
+                        },
+                        new
+                        {
+                            Id = 19,
+                            BadgeType = "recycling",
+                            Description = "Compost for 7 consecutive days",
+                            Icon = "🌿",
+                            IsActive = true,
+                            Name = "Compost Champion",
+                            PointsReward = 45,
+                            RequirementCategory = "composting",
+                            RequirementType = "streak",
+                            RequirementValue = 7.0
+                        },
+                        new
+                        {
+                            Id = 20,
+                            BadgeType = "recycling",
+                            Description = "Use no plastic products for 3 days",
+                            Icon = "🚫",
+                            IsActive = true,
+                            Name = "Plastic Free",
+                            PointsReward = 50,
+                            RequirementCategory = "plastic_free",
+                            RequirementType = "streak",
+                            RequirementValue = 3.0
+                        },
+                        new
+                        {
+                            Id = 21,
+                            BadgeType = "general",
+                            Description = "Plant a tree",
+                            Icon = "🌳",
+                            IsActive = true,
+                            Name = "Tree Planter",
+                            PointsReward = 100,
+                            RequirementCategory = "tree_planting",
+                            RequirementType = "activities_count",
+                            RequirementValue = 1.0
+                        },
+                        new
+                        {
+                            Id = 22,
+                            BadgeType = "general",
+                            Description = "Earn 500 eco points",
+                            Icon = "👑",
+                            IsActive = true,
+                            Name = "Eco Champion",
+                            PointsReward = 200,
+                            RequirementCategory = "general",
+                            RequirementType = "eco_points",
+                            RequirementValue = 500.0
+                        },
+                        new
+                        {
+                            Id = 23,
+                            BadgeType = "general",
+                            Description = "Maintain 7-day streak",
+                            Icon = "🔥",
+                            IsActive = true,
+                            Name = "Week Warrior",
+                            PointsReward = 80,
+                            RequirementCategory = "general",
+                            RequirementType = "streak",
+                            RequirementValue = 7.0
+                        },
+                        new
+                        {
+                            Id = 24,
+                            BadgeType = "general",
+                            Description = "Maintain 30-day streak",
+                            Icon = "🏆",
+                            IsActive = true,
+                            Name = "Month Master",
+                            PointsReward = 300,
+                            RequirementCategory = "general",
+                            RequirementType = "streak",
+                            RequirementValue = 30.0
+                        },
+                        new
+                        {
+                            Id = 25,
+                            BadgeType = "general",
+                            Description = "Save 100 kg of CO2",
+                            Icon = "💚",
+                            IsActive = true,
+                            Name = "Century Saver",
+                            PointsReward = 150,
+                            RequirementCategory = "general",
+                            RequirementType = "co2_saved",
+                            RequirementValue = 100.0
+                        },
+                        new
+                        {
+                            Id = 26,
+                            BadgeType = "general",
+                            Description = "Save 500 kg of CO2",
+                            Icon = "💪",
+                            IsActive = true,
+                            Name = "Carbon Crusher",
+                            PointsReward = 500,
+                            RequirementCategory = "general",
+                            RequirementType = "co2_saved",
+                            RequirementValue = 500.0
+                        });
                 });
 
             modelBuilder.Entity("EcoBackend.Core.Entities.Challenge", b =>
@@ -347,6 +687,70 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.ToTable("DailyScores");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.DeviceToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Token")
+                        .IsUnique();
+
+                    b.ToTable("DeviceTokens");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.EmailVerificationToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("EmailVerificationTokens");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.LocationPoint", b =>
                 {
                     b.Property<int>("Id")
@@ -448,6 +852,76 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.ToTable("MonthlyReports");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("TargetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("PasswordResetTokens");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.PredictionLog", b =>
                 {
                     b.Property<int>("Id")
@@ -481,6 +955,44 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("PredictionLogs");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReplacedByToken")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("EcoBackend.Core.Entities.Tip", b =>
@@ -680,6 +1192,9 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("EmailVerified")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ExperiencePoints")
                         .HasColumnType("INTEGER");
 
@@ -730,6 +1245,7 @@ namespace EcoBackend.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("ProfilePicture")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SecurityStamp")
@@ -1192,6 +1708,28 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.DeviceToken", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.EmailVerificationToken", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.LocationPoint", b =>
                 {
                     b.HasOne("EcoBackend.Core.Entities.Trip", "Trip")
@@ -1220,7 +1758,40 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.Notification", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.PredictionLog", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.RefreshToken", b =>
                 {
                     b.HasOne("EcoBackend.Core.Entities.User", "User")
                         .WithMany()

@@ -69,14 +69,26 @@ class EcoScoreCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        trend > 0 ? Icons.trending_up : Icons.trending_down,
+                        trend > 0 
+                            ? Icons.trending_up 
+                            : trend < 0 
+                                ? Icons.trending_down 
+                                : Icons.trending_flat,
                         color: Colors.white,
                         size: 20,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        '${trend > 0 ? '+' : ''}$trend% from yesterday',
-                        style: const TextStyle(color: Colors.white70),
+                      Flexible(
+                        child: Text(
+                          trend == 0 
+                              ? 'No change from yesterday'
+                              : '${trend > 0 ? '+' : ''}$trend% from yesterday',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

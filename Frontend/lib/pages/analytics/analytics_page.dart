@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'dart:ui' as ui;
 import '../../services/analytics_service.dart';
 import '../../services/guest_service.dart';
 
@@ -156,6 +158,48 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     }
   }
 
+  String _formatDateRange(String startDateStr, String endDateStr) {
+    try {
+      // Parse ISO 8601 dates
+      final startDate = DateTime.parse(startDateStr);
+      final endDate = DateTime.parse(endDateStr);
+      
+      // Format based on whether dates are in the same month/year
+      final now = DateTime.now();
+      final dateFormat = DateFormat('MMM d');
+      final yearFormat = DateFormat('MMM d, yyyy');
+      
+      // If viewing daily data, show only one date
+      if (_selectedPeriod == 'Day') {
+        return startDate.year == now.year 
+            ? dateFormat.format(startDate)
+            : yearFormat.format(startDate);
+      }
+      
+      // If both dates are in the current year, don't show year
+      if (startDate.year == now.year && endDate.year == now.year) {
+        // If same date, show just one date
+        if (startDate.year == endDate.year && 
+            startDate.month == endDate.month && 
+            startDate.day == endDate.day) {
+          return dateFormat.format(startDate);
+        }
+        // If same month, show "MMM d-d"
+        if (startDate.year == endDate.year && startDate.month == endDate.month) {
+          return '${DateFormat('MMM').format(startDate)} ${startDate.day}-${endDate.day}';
+        }
+        // Different months, same year
+        return '${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}';
+      }
+      
+      // Different years or not current year, include year
+      return '${yearFormat.format(startDate)} - ${yearFormat.format(endDate)}';
+    } catch (e) {
+      // If parsing fails, return the original strings truncated
+      return '$startDateStr - $endDateStr'.substring(0, 30);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -208,6 +252,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               child: Row(
                 children: ['Day', 'Week', 'Month', 'Year'].map((period) {
                   final isSelected = _selectedPeriod == period;
+                  final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+                  
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
@@ -215,7 +261,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       selected: isSelected,
                       selectedColor: Colors.green,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.grey[700],
+                        color: isSelected 
+                            ? Colors.white // Selected: always white on green background
+                            : (isDarkMode ? Colors.white : Colors.black), // Unselected: follow theme
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                       onSelected: (selected) {
@@ -281,6 +329,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return [
       // Total Carbon Footprint Card
       Card(
+        elevation: 0,
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? const Color(0xFF252525) 
+            : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -362,9 +417,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     '${stats.totalActivities} activities',
                     style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
                   ),
-                  Text(
-                    '${stats.startDate} - ${stats.endDate}',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+                  Flexible(
+                    child: Text(
+                      _formatDateRange(stats.startDate, stats.endDate),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -422,6 +481,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       ),
       const SizedBox(height: 12),
       Card(
+        elevation: 0,
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? const Color(0xFF252525) 
+            : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Container(
           height: 240,
           padding: const EdgeInsets.all(16),
@@ -463,7 +529,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       final diff = ((comparison.userCo2Saved - comparison.avgCo2Saved) / comparison.avgCo2Saved * 100).round();
       vsAvgText = '${diff > 0 ? '+' : ''}$diff%';
     } else {
-      vsAvgText = 'N/A';
+      vsAvgText = '0%';
     }
 
     return Row(
@@ -560,6 +626,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Widget _buildLoadingCard(String message) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(40),
@@ -576,7 +649,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Widget _buildErrorCard(String error, {VoidCallback? onRetry}) {
     return Card(
-      color: Colors.red[50],
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.red[50],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -608,6 +687,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -643,6 +729,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Widget _buildComparisonCard(String title, String value, IconData icon, Color color, String subtitle) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -681,6 +774,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   Widget _buildCategoryBreakdownCard(List<CategoryBreakdown> categories) {
     if (categories.isEmpty) {
       return Card(
+        elevation: 0,
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? const Color(0xFF252525) 
+            : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Center(
@@ -704,6 +804,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     ];
 
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -882,6 +989,14 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Widget _buildInsightCard(IconData icon, String title, String description, Color color) {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Container(
@@ -968,7 +1083,7 @@ class _LineChartPainter extends CustomPainter {
 
     // Draw labels
     final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
+      textDirection: ui.TextDirection.ltr,
     );
 
     for (var i = 0; i < labels.length && i < displayCount; i++) {

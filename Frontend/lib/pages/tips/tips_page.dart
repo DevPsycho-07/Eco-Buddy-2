@@ -186,6 +186,13 @@ class _TipsPageState extends State<TipsPage> {
             : Colors.blue;
 
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => _showTipDetail(tip),

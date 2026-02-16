@@ -1,12 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import '../../core/theme/app_theme.dart';
-import '../../core/config/api_config.dart';
 import '../../services/auth_service.dart';
 import '../../services/guest_service.dart';
-import '../../utils/logger.dart';
 import '../profile/eco_profile_setup_page.dart';
 import 'login_page.dart';
 
@@ -20,7 +15,6 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -28,68 +22,17 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   bool _acceptTerms = false;
-  bool _isCheckingUsername = false;
-  bool? _usernameAvailable;
-  Timer? _debounceTimer;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _usernameController.dispose();
     _emailController.dispose();
-    _debounceTimer?.cancel();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _checkUsernameAvailability(String username) async {
-    if (username.length < 3) {
-      setState(() {
-        _usernameAvailable = null;
-        _isCheckingUsername = false;
-      });
-      return;
-    }
-
-    setState(() => _isCheckingUsername = true);
-
-    try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/users/check-username/$username'),
-      ).timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _usernameAvailable = !(data['exists'] as bool);
-          _isCheckingUsername = false;
-        });
-      }
-    } catch (e) {
-      Logger.error('Error checking username: $e');
-      setState(() {
-        _usernameAvailable = null;
-        _isCheckingUsername = false;
-      });
-    }
-  }
-
-  void _onUsernameChanged(String value) {
-    _debounceTimer?.cancel();
-    setState(() {
-      _usernameAvailable = null;
-      _isCheckingUsername = false;
-    });
-
-    if (value.length >= 3) {
-      _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-        _checkUsernameAvailability(value);
-      });
-    }
-  }
-
-  void _handleSignUp() async {
+  Future<void> _handleSignUp() async {
     if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -115,11 +58,10 @@ class _SignUpPageState extends State<SignUpPage> {
       setState(() => _isLoading = true);
 
       final result = await AuthService.signup(
-        username: _usernameController.text.trim(),
+        username: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
         passwordConfirm: _confirmPasswordController.text,
-        fullName: _nameController.text.trim(),
       );
 
       setState(() => _isLoading = false);
@@ -132,21 +74,57 @@ class _SignUpPageState extends State<SignUpPage> {
         
         if (!mounted) return;
         
-        Logger.debug('✅ [Signup] Account created successfully!');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created successfully!'),
-            backgroundColor: AppTheme.primaryGreen,
+        // Show email verification message
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) => AlertDialog(
+            title: const Text('Verify Your Email'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'We\'ve sent a verification email to:',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _emailController.text.trim(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF43A047),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Please check your inbox and click the verification link to complete your registration.',
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'The link will expire in 24 hours.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Continue to eco profile setup
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const EcoProfileSetupPage(isFirstTime: true)),
+                  );
+                },
+                child: const Text('Continue'),
+              ),
+            ],
           ),
         );
-        // New signup always goes to eco profile setup
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const EcoProfileSetupPage(isFirstTime: true)),
-        );
       } else {
-        final errorMsg = result['error'] ?? 'Signup failed';
-        Logger.error('❌ [Signup] Signup failed: $errorMsg');
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -197,7 +175,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 36),
-                // Full Name Field
+                // Name Field
                 TextFormField(
                   controller: _nameController,
                   keyboardType: TextInputType.name,
@@ -227,68 +205,6 @@ class _SignUpPageState extends State<SignUpPage> {
                     }
                     if (value.length < 2) {
                       return 'Name must be at least 2 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                // Username Field
-                TextFormField(
-                  controller: _usernameController,
-                  onChanged: _onUsernameChanged,
-                  decoration: InputDecoration(
-                    labelText: 'Username',
-                    hintText: 'Choose a username (letters, numbers, underscore)',
-                    prefixIcon: const Icon(Icons.alternate_email),
-                    suffixIcon: _isCheckingUsername
-                        ? const Padding(
-                            padding: EdgeInsets.all(12.0),
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : _usernameAvailable == true
-                            ? const Icon(Icons.check_circle, color: Colors.green)
-                            : _usernameAvailable == false
-                                ? const Icon(Icons.cancel, color: Colors.red)
-                                : null,
-                    helperText: _usernameAvailable == true
-                        ? '✓ Username is available'
-                        : _usernameAvailable == false
-                            ? '✗ Username is already taken'
-                            : null,
-                    helperStyle: TextStyle(
-                      color: _usernameAvailable == true ? Colors.green : Colors.red,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: _usernameAvailable == false ? Colors.red : AppTheme.primaryGreen,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a username';
-                    }
-                    if (value.length < 3) {
-                      return 'Username must be at least 3 characters';
-                    }
-                    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
-                      return 'Username can only contain letters, numbers, and underscores';
-                    }
-                    if (_usernameAvailable == false) {
-                      return 'Username is already taken';
                     }
                     return null;
                   },

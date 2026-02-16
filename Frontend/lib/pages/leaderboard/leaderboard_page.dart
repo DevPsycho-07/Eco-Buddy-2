@@ -111,7 +111,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             child: Card(
-              color: Colors.green[50],
+              elevation: 0,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? const Color(0xFF252525) 
+                  : Colors.green[50],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -225,8 +231,14 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
     final isUser = leader['isUser'] == true;
     
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : (isUser ? Colors.green[50] : Colors.white),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      color: isUser ? Colors.green[50] : null,
       child: ListTile(
         leading: Row(
           mainAxisSize: MainAxisSize.min,
@@ -393,26 +405,26 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         const SizedBox(height: 12),
-        Card(
+        const Card(
           child: ListTile(
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               backgroundColor: Colors.amber,
               child: Text('🥇'),
             ),
-            title: const Text('EcoWarrior'),
-            subtitle: const Text('Won "Zero Waste Week" challenge'),
-            trailing: const Text('Jan 1', style: TextStyle(color: Colors.grey)),
+            title: Text('EcoWarrior'),
+            subtitle: Text('Won "Zero Waste Week" challenge'),
+            trailing: Text('Jan 1', style: TextStyle(color: Colors.grey)),
           ),
         ),
-        Card(
+        const Card(
           child: ListTile(
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               backgroundColor: Colors.amber,
               child: Text('🥇'),
             ),
-            title: const Text('GreenHero'),
-            subtitle: const Text('Won "Plant More Trees" challenge'),
-            trailing: const Text('Dec 25', style: TextStyle(color: Colors.grey)),
+            title: Text('GreenHero'),
+            subtitle: Text('Won "Plant More Trees" challenge'),
+            trailing: Text('Dec 25', style: TextStyle(color: Colors.grey)),
           ),
         ),
       ],
@@ -423,6 +435,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
     final joined = challenge['joined'] as bool;
     
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),

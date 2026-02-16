@@ -166,7 +166,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
         children: [
           // GPS Tracking Status
           Card(
-            color: _gpsEnabled ? Colors.green[50] : Colors.orange[50],
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : (_gpsEnabled ? Colors.green[50] : Colors.orange[50]),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
@@ -284,6 +290,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
 
           // Eco Score Impact
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -455,6 +468,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
         children: [
           // Weekly Trend Chart Placeholder
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -498,6 +518,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
 
           // Transport Distribution
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -547,7 +574,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
 
           // Comparison Card
           Card(
-            color: Colors.green[50],
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.green[50],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -642,6 +675,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
     required Color color,
   }) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -664,6 +704,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
 
   Widget _buildTransportModeCard(Map<String, dynamic> mode) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => _showTransportDetail(mode),
@@ -727,6 +774,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
 
   Widget _buildTripCard(Map<String, dynamic> trip) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => _showTripDetail(trip),
@@ -835,17 +889,17 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
         Container(
           width: 20,
           height: (saved / maxValue) * 80,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: Colors.green,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
           ),
         ),
         Container(
           width: 20,
           height: (emitted / maxValue) * 80,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: Colors.orange,
-            borderRadius: const BorderRadius.vertical(
+            borderRadius: BorderRadius.vertical(
               bottom: Radius.circular(4),
             ),
           ),
@@ -904,6 +958,13 @@ class _TravelInsightsPageState extends State<TravelInsightsPage>
     String description,
   ) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         leading: Container(

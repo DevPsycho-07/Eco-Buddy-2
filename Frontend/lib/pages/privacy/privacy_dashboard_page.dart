@@ -96,6 +96,10 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
         children: [
           // Privacy Score Card
           Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -228,7 +232,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
 
           // Data Storage Info
           Card(
-            color: Colors.blue[50],
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.blue[50],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -273,6 +283,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
           ),
           const SizedBox(height: 12),
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
               children: [
                 _buildSharingSetting(
@@ -314,6 +331,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
           ),
           const SizedBox(height: 12),
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
               children: [
                 ListTile(
@@ -388,7 +412,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
 
           // Privacy Guarantee
           Card(
-            color: Colors.green[50],
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.green[50],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -436,6 +466,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
 
           // Last Audit
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
@@ -482,6 +519,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
     final enabled = category['enabled'] as bool;
 
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => _showDataCategoryDetail(category),
@@ -1061,13 +1105,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => const AlertDialog(
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            const Text('Running privacy audit...'),
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Running privacy audit...'),
           ],
         ),
       ),

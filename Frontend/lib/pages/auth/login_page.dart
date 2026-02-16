@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../core/navigation/app_shell.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 import '../../services/eco_profile_service.dart';
 import '../../services/guest_service.dart';
-import '../../utils/logger.dart';
 import '../profile/eco_profile_setup_page.dart';
 import 'signup_page.dart';
 
@@ -68,7 +67,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _handleLogin() async {
+  Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
@@ -80,12 +79,38 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       if (!mounted) return;
 
       if (result['success'] == true) {
+        // Check if email is verified
+        final emailVerified = result['email_verified'] ?? result['user']?['emailVerified'] ?? true;
+        
+        if (!emailVerified) {
+          setState(() => _isLoading = false);
+          // Show email verification required dialog
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) => AlertDialog(
+              title: const Text('Email Verification Required'),
+              content: const Text(
+                'Your email hasn\'t been verified yet. Please check your inbox for a verification email and click the link to verify your account.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+        
         // End any existing guest session
         await GuestService.endGuestSession();
         
         if (!mounted) return;
         
-        Logger.debug('✅ [Login] Login successful!');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Login successful!'),
@@ -101,18 +126,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
         if (hasEcoProfile) {
           // User has eco profile, go to main app
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const AppShell(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              transitionDuration: const Duration(milliseconds: 400),
-            ),
-          );
+          context.go('/home');
         } else {
           // First time login, show eco profile setup
           Navigator.pushReplacement(
@@ -130,8 +144,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         }
       } else {
         setState(() => _isLoading = false);
-        final errorMsg = result['error'] ?? 'Login failed';
-        Logger.error('❌ [Login] Login failed: $errorMsg');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Invalid email or password. Please try again.'),
@@ -485,16 +497,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ),
         GestureDetector(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Forgot password feature coming soon!'),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                backgroundColor: const Color(0xFF43A047),
-              ),
-            );
+            context.go('/forgot-password');
           },
           child: const Text(
             'Forgot Password?',
@@ -647,7 +650,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "New to Eco Buddy? ",
+          'New to Eco Buddy? ',
           style: TextStyle(
             color: isDarkMode 
               ? Colors.grey.shade400

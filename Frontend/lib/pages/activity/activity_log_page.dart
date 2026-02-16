@@ -525,6 +525,13 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
                 if (_filterActivityTypes(currentCategory.activityTypes).isEmpty)
                   Card(
+                    elevation: 0,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? const Color(0xFF252525) 
+                        : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Center(
@@ -546,7 +553,15 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
                 // Impact Calculator Card
                 Card(
+                  elevation: 2,
                   color: Colors.blue[50],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: Colors.blue.shade200,
+                      width: 1,
+                    ),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -563,7 +578,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                               child: const Icon(Icons.calculate, color: Colors.blue),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(
+                            const Expanded(
                               child: Text(
                                 'Impact Calculator',
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
@@ -602,6 +617,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
             color: Colors.black26,
             child: const Center(
               child: Card(
+                elevation: 0,
+                color: Color(0xFF252525),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Column(
@@ -680,6 +700,13 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
         : '${activityType.co2Impact.toStringAsFixed(1)} kg';
 
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => _showActivityDetailDialog(context, activityType),
@@ -1072,7 +1099,13 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                   const SizedBox(height: 24),
                 ],
                 Card(
-                  color: calculatedImpact >= 0 ? Colors.orange[50] : Colors.green[50],
+                  elevation: 0,
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? const Color(0xFF252525) 
+                      : (calculatedImpact >= 0 ? Colors.orange[50] : Colors.green[50]),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(

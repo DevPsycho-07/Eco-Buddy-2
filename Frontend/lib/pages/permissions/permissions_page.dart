@@ -138,7 +138,13 @@ class _PermissionsPageState extends State<PermissionsPage> {
         children: [
           // Info Banner
           Card(
-            color: Colors.blue[50],
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.blue[50],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -179,6 +185,13 @@ class _PermissionsPageState extends State<PermissionsPage> {
 
           // Status Summary Card
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -270,7 +283,13 @@ class _PermissionsPageState extends State<PermissionsPage> {
 
           // Privacy Note
           Card(
-            color: Colors.green[50],
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF252525) 
+                : Colors.green[50],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: const Padding(
               padding: EdgeInsets.all(16),
               child: Row(
@@ -329,6 +348,13 @@ class _PermissionsPageState extends State<PermissionsPage> {
     final enabled = permission['enabled'] as bool;
 
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => _showPermissionDetail(key),

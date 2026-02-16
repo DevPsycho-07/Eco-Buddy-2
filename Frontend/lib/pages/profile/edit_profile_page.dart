@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import '../../services/http_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/eco_profile_service.dart';
-import '../../utils/logger.dart';
+import '../../services/secure_profile_picture_service.dart';
 import '../../core/config/api_config.dart';
+import '../../core/widgets/secure_profile_picture_avatar.dart';
 import 'eco_profile_setup_page.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -33,8 +33,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _firstNameController = TextEditingController(text: widget.profileData['first_name'] ?? '');
-    _lastNameController = TextEditingController(text: widget.profileData['last_name'] ?? '');
+    _firstNameController = TextEditingController(text: widget.profileData['firstName'] ?? '');
+    _lastNameController = TextEditingController(text: widget.profileData['lastName'] ?? '');
     _usernameController = TextEditingController(text: widget.profileData['username'] ?? '');
     _bioController = TextEditingController(text: widget.profileData['bio'] ?? '');
   }
@@ -63,7 +63,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         });
       }
     } catch (e) {
-      Logger.error('❌ [ImagePicker] Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -103,15 +102,78 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   _pickImage(ImageSource.camera);
                 },
               ),
-              if (_selectedImage != null || widget.profileData['profile_picture'] != null)
+              if (_selectedImage != null || widget.profileData['profilePicture'] != null)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('Remove Photo'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      _selectedImage = null;
-                    });
+                  onTap: () async {
+                    final navigator = Navigator.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+                    
+                    navigator.pop();
+                    
+                    // Show confirmation dialog
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Remove Photo'),
+                        content: const Text('Are you sure you want to remove your profile picture?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    );
+                    
+                    if (confirmed == true) {
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      
+                      try {
+                        // Delete from server if exists
+                        if (widget.profileData['profilePicture'] != null) {
+                          await SecureProfilePictureService.deleteProfilePicture();
+                          // Update the profile data to reflect removal
+                          widget.profileData['profilePicture'] = null;
+                        }
+                        
+                        setState(() {
+                          _selectedImage = null;
+                          _isLoading = false;
+                        });
+                        
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Profile picture removed'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          // Pop back to profile page to trigger refresh
+                          navigator.pop(true);
+                        }
+                      } catch (e) {
+                        setState(() {
+                          _isLoading = false;
+                        });
+                        
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to remove photo: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    }
                   },
                 ),
             ],
@@ -125,38 +187,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (_selectedImage == null) return null;
 
     try {
-      const baseUrl = ApiConfig.baseUrl;
       final token = await AuthService.getToken();
       
       if (token == null) {
         throw Exception('No authentication token');
       }
 
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/users/upload-picture/'),
+      // Use secure profile picture service for encryption
+      await SecureProfilePictureService.uploadProfilePicture(
+        _selectedImage!.path,
       );
-
-      request.headers['Authorization'] = 'Bearer $token';
       
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'profile_picture',
-          _selectedImage!.path,
-        ),
-      );
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['profile_picture'];
-      } else {
-        throw Exception('Failed to upload image: ${response.statusCode}');
-      }
+      return 'profile_picture_uploaded';
     } catch (e) {
-      Logger.error('❌ [ImageUpload] Error: $e');
       throw Exception('Image upload failed: $e');
     }
   }
@@ -172,14 +215,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       const baseUrl = ApiConfig.baseUrl;
       
-      // Upload image first if selected;
+      // Upload image first if selected (via secure service)
       if (_selectedImage != null) {
         await _uploadImage();
       }
       
       // Update profile data
       final response = await ApiClient.put(
-        Uri.parse('$baseUrl/users/profile/'),
+        Uri.parse('$baseUrl/users/profile'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'firstName': _firstNameController.text.trim(),
@@ -190,7 +233,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
 
       if (response.statusCode == 200) {
-        Logger.debug('✅ [EditProfile] Profile updated successfully');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -205,7 +247,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         throw Exception(errorData['detail'] ?? 'Failed to update profile');
       }
     } catch (e) {
-      Logger.error('❌ [EditProfile] Error: $e');
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
@@ -247,18 +288,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
               Center(
                 child: Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.green[100],
-                      backgroundImage: _selectedImage != null
-                          ? FileImage(_selectedImage!)
-                          : (widget.profileData['profile_picture'] != null
-                              ? NetworkImage(widget.profileData['profile_picture'])
-                              : null) as ImageProvider?,
-                      child: _selectedImage == null && widget.profileData['profile_picture'] == null
-                          ? const Icon(Icons.person, size: 50, color: Colors.green)
-                          : null,
-                    ),
+                    _selectedImage != null
+                        ? CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.green[100],
+                            backgroundImage: FileImage(_selectedImage!),
+                          )
+                        : SecureProfilePictureAvatar(
+                            key: ValueKey(widget.profileData['profilePicture']),
+                            radius: 50,
+                            backgroundColor: Colors.green[100],
+                            placeholder: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.green[100],
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.green),
+                              ),
+                            ),
+                            errorWidget: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.green[100],
+                              child: const Icon(Icons.person,
+                                  size: 50, color: Colors.green),
+                            ),
+                          ),
                     Positioned(
                       bottom: 0,
                       right: 0,
@@ -282,7 +337,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               Center(
                 child: TextButton(
                   onPressed: _showImageSourceDialog,
-                  child: Text(_selectedImage != null || widget.profileData['profile_picture'] != null
+                  child: Text(_selectedImage != null || widget.profileData['profilePicture'] != null
                       ? 'Change Photo'
                       : 'Add Photo'),
                 ),
@@ -491,7 +546,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         );
       }
     } catch (e) {
-      Logger.error('❌ [EditProfile] Error opening eco settings: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

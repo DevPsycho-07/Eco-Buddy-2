@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../core/config/api_config.dart';
-import '../utils/logger.dart';
 import 'http_client.dart';
 
 /// Model for category breakdown data
@@ -22,7 +21,7 @@ class CategoryBreakdown {
     return CategoryBreakdown(
       name: name,
       count: json['count'] ?? 0,
-      co2Impact: (json['co2_impact'] ?? 0).toDouble(),
+      co2Impact: (json['co2Impact'] ?? json['cO2Impact'] ?? 0).toDouble(),
       percentage: (json['percentage'] ?? 0).toDouble(),
     );
   }
@@ -43,7 +42,7 @@ class TrendData {
   factory TrendData.fromJson(Map<String, dynamic> json) {
     return TrendData(
       date: json['date'] ?? '',
-      co2Impact: (json['co2_impact'] ?? 0).toDouble(),
+      co2Impact: (json['co2Impact'] ?? json['cO2Impact'] ?? 0).toDouble(),
       activities: json['activities'] ?? 0,
     );
   }
@@ -74,8 +73,8 @@ class AnalyticsStats {
   });
 
   factory AnalyticsStats.fromJson(Map<String, dynamic> json) {
-    // Parse categories from by_category map
-    final categoriesMap = json['by_category'] as Map<String, dynamic>? ?? {};
+    // Parse categories from byCategory map
+    final categoriesMap = json['byCategory'] as Map<String, dynamic>? ?? {};
     final categories = categoriesMap.entries
         .map((e) => CategoryBreakdown.fromJson(e.key, e.value as Map<String, dynamic>))
         .toList();
@@ -88,12 +87,12 @@ class AnalyticsStats {
 
     return AnalyticsStats(
       period: json['period'] ?? '',
-      startDate: json['start_date'] ?? '',
-      endDate: json['end_date'] ?? '',
-      totalCo2Emitted: (json['total_co2_emitted'] ?? 0).toDouble(),
-      totalCo2Saved: (json['total_co2_saved'] ?? 0).toDouble(),
-      netImpact: (json['net_impact'] ?? 0).toDouble(),
-      totalActivities: json['total_activities'] ?? 0,
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
+      totalCo2Emitted: (json['totalCO2Emitted'] ?? json['totalCo2Emitted'] ?? 0).toDouble(),
+      totalCo2Saved: (json['totalCO2Saved'] ?? json['totalCo2Saved'] ?? 0).toDouble(),
+      netImpact: (json['netCO2Impact'] ?? json['netImpact'] ?? 0).toDouble(),
+      totalActivities: json['totalActivities'] ?? 0,
       categories: categories,
       trend: trend,
     );
@@ -126,13 +125,13 @@ class ComparisonData {
     final comparison = json['comparison'] as Map<String, dynamic>? ?? {};
 
     return ComparisonData(
-      userEcoScore: (user['eco_score'] ?? 0).toDouble(),
-      userCo2Saved: (user['total_co2_saved'] ?? 0).toDouble(),
-      avgEcoScore: (average['eco_score'] ?? 0).toDouble(),
-      avgCo2Saved: (average['total_co2_saved'] ?? 0).toDouble(),
+      userEcoScore: (user['ecoScore'] ?? 0).toDouble(),
+      userCo2Saved: (user['totalCO2Saved'] ?? user['totalCo2Saved'] ?? 0).toDouble(),
+      avgEcoScore: (average['ecoScore'] ?? 0).toDouble(),
+      avgCo2Saved: (average['totalCO2Saved'] ?? average['totalCo2Saved'] ?? 0).toDouble(),
       percentile: (json['percentile'] ?? 0).toDouble(),
-      scoreDiff: (comparison['score_diff'] ?? 0).toDouble(),
-      co2Diff: (comparison['co2_diff'] ?? 0).toDouble(),
+      scoreDiff: (comparison['scoreDiff'] ?? 0).toDouble(),
+      co2Diff: (comparison['co2Diff'] ?? 0).toDouble(),
     );
   }
 }
@@ -144,16 +143,13 @@ class AnalyticsService {
   /// Get analytics stats for a specific period
   /// [period] can be 'day', 'week', 'month', or 'year'
   static Future<AnalyticsStats> getStats(String period) async {
-    final url = Uri.parse('$_baseUrl/stats/?period=$period');
-    
-    Logger.debug('📊 [AnalyticsService] Fetching stats for period: $period');
+    final url = Uri.parse('$_baseUrl/stats?period=$period');
     
     try {
       final response = await ApiClient.get(url);
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        Logger.debug('✅ [AnalyticsService] Stats fetched successfully');
         return AnalyticsStats.fromJson(data);
       } else if (response.statusCode == 401) {
         throw AnalyticsException(
@@ -192,19 +188,16 @@ class AnalyticsService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [AnalyticsService] Network error: $e');
+    } on http.ClientException {
       throw AnalyticsException(
         'Network error. Please check your internet connection and ensure the server is running.',
       );
-    } on FormatException catch (e) {
-      Logger.error('❌ [AnalyticsService] Invalid response format: $e');
+    } on FormatException {
       throw AnalyticsException(
         'Invalid response from server. Please try again later.',
       );
     } catch (e) {
       if (e is AnalyticsException) rethrow;
-      Logger.error('❌ [AnalyticsService] Unexpected error: $e');
       throw AnalyticsException(
         'An unexpected error occurred: ${e.toString()}',
       );
@@ -213,16 +206,13 @@ class AnalyticsService {
 
   /// Get comparison data (user vs average)
   static Future<ComparisonData> getComparison() async {
-    final url = Uri.parse('$_baseUrl/comparison/');
-    
-    Logger.debug('📊 [AnalyticsService] Fetching comparison data');
+    final url = Uri.parse('$_baseUrl/comparison');
     
     try {
       final response = await ApiClient.get(url);
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        Logger.debug('✅ [AnalyticsService] Comparison data fetched successfully');
         return ComparisonData.fromJson(data);
       } else if (response.statusCode == 401) {
         throw AnalyticsException(
@@ -261,19 +251,16 @@ class AnalyticsService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [AnalyticsService] Network error: $e');
+    } on http.ClientException {
       throw AnalyticsException(
         'Network error. Please check your internet connection and ensure the server is running.',
       );
-    } on FormatException catch (e) {
-      Logger.error('❌ [AnalyticsService] Invalid response format: $e');
+    } on FormatException {
       throw AnalyticsException(
         'Invalid response from server. Please try again later.',
       );
     } catch (e) {
       if (e is AnalyticsException) rethrow;
-      Logger.error('❌ [AnalyticsService] Unexpected error: $e');
       throw AnalyticsException(
         'An unexpected error occurred: ${e.toString()}',
       );

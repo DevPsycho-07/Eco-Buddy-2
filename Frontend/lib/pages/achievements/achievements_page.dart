@@ -439,11 +439,13 @@ class _AchievementsPageState extends State<AchievementsPage> with SingleTickerPr
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Card(
+      elevation: 0,
+      color: isDark ? const Color(0xFF252525) : Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: color.withValues(alpha: 0.5),
-          width: 1.5,
+          color: color.withValues(alpha: 0.6),
+          width: 2,
         ),
       ),
       child: Padding(
@@ -529,7 +531,7 @@ class _AchievementsPageState extends State<AchievementsPage> with SingleTickerPr
     );
   }
 
-  Widget _buildBadge(Map<String, dynamic>? badgeData, bool earned) {
+  Widget  _buildBadge(Map<String, dynamic>? badgeData, bool earned) {
     if (badgeData == null) return const SizedBox.shrink();
     
     // Both earned and not_earned badges are returned as Badge objects directly from the backend
@@ -570,7 +572,9 @@ class _AchievementsPageState extends State<AchievementsPage> with SingleTickerPr
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: earned ? FontWeight.bold : FontWeight.normal,
-                color: earned ? Colors.black : Colors.grey[800],
+                color: earned 
+                    ? (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.black)
+                    : (Theme.of(context).brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[800]),
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -708,7 +712,7 @@ class _AchievementsPageState extends State<AchievementsPage> with SingleTickerPr
     );
   }
 
-  void _showAvailableChallenges() async {
+  Future<void> _showAvailableChallenges() async {
     // Check guest mode first
     if (_isGuestMode) {
       _showGuestModeDialog();
@@ -746,6 +750,13 @@ class _AchievementsPageState extends State<AchievementsPage> with SingleTickerPr
                 itemBuilder: (context, index) {
                   final challenge = challenges[index];
                   return Card(
+                    elevation: 0,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? const Color(0xFF252525) 
+                        : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
                       title: Text(challenge['title'] ?? ''),
@@ -786,6 +797,13 @@ class _AchievementsPageState extends State<AchievementsPage> with SingleTickerPr
     final targetUnit = challenge['target_unit'] ?? 'units';
     
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -862,7 +880,13 @@ class _AchievementsPageState extends State<AchievementsPage> with SingleTickerPr
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
         Card(
-          color: Theme.of(context).brightness == Brightness.dark ? Colors.blue[900] : Colors.blue[50],
+          elevation: 0,
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? const Color(0xFF252525) 
+              : Colors.blue[50],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -938,14 +962,12 @@ class _AchievementsPageState extends State<AchievementsPage> with SingleTickerPr
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      color: isDark ? const Color(0xFF252525) : Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: earned ? Colors.green : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
-          width: 1.5,
-        ),
+        borderRadius: BorderRadius.circular(16),
       ),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(

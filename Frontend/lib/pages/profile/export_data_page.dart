@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../services/http_client.dart';
-import '../../utils/logger.dart';
 import '../../core/config/api_config.dart';
 
 class ExportDataPage extends StatefulWidget {
@@ -31,7 +30,6 @@ class _ExportDataPageState extends State<ExportDataPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        Logger.debug('✅ [Export] Data exported successfully');
         setState(() {
           _exportedData = data;
         });
@@ -39,7 +37,6 @@ class _ExportDataPageState extends State<ExportDataPage> {
         throw Exception('Failed to export data');
       }
     } catch (e) {
-      Logger.error('❌ [Export] Error: $e');
       setState(() {
         _errorMessage = e.toString();
       });
@@ -117,6 +114,13 @@ class _ExportDataPageState extends State<ExportDataPage> {
             const SizedBox(height: 12),
 
             Card(
+              elevation: 0,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? const Color(0xFF252525) 
+                  : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Column(
                 children: [
                   _buildIncludedItem(Icons.person, 'Profile Information', 'Name, bio, settings'),
@@ -253,16 +257,23 @@ class _ExportDataPageState extends State<ExportDataPage> {
     final stats = data['statistics'] as Map<String, dynamic>?;
 
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? const Color(0xFF252525) 
+          : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.green),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Text(
                   'Data Exported Successfully!',
                   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                 ),

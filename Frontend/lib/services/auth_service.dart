@@ -1,8 +1,10 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../utils/logger.dart';
+import '../core/routing/app_router.dart';
 import '../core/config/api_config.dart';
+import '../core/utils/app_logger.dart';
+import 'fcm_service.dart';
 
 class AuthService {
   static const String baseUrl = ApiConfig.baseUrl;
@@ -18,10 +20,8 @@ class AuthService {
     required String password,
   }) async {
     try {
-      Logger.debug('🔐 [Auth] Attempting login with email: $email');
-      
       final response = await http.post(
-        Uri.parse('$baseUrl/users/login/'),
+        Uri.parse('$baseUrl/users/login'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -31,12 +31,8 @@ class AuthService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      Logger.debug('✅ [Auth] Login response status: ${response.statusCode}');
-      Logger.debug('📋 [Auth] Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // ASP.NET backend uses 'accessToken' and 'refreshToken'
         final accessToken = data['accessToken'] ?? data['access'];
         final refreshToken = data['refreshToken'] ?? data['refresh'];
         
@@ -50,12 +46,23 @@ class AuthService {
           final expiryTime = DateTime.now().add(const Duration(hours: 24)).toIso8601String();
           await _storage.write(key: _tokenExpiryKey, value: expiryTime);
           
-          Logger.debug('✅ [Auth] Login successful! Tokens stored.');
+          // Update router auth state
+          AppRouter.updateAuthState(true);
+          
+          // Register device token with backend after successful login (fire and forget)
+          try {
+            await FCMService.registerDeviceToken();
+          } catch (e) {
+            // Log error but don't fail login - token might be registered later
+            AppLogger.warning('⚠️ Failed to register device token during login: $e');
+          }
+          
           return {
             'success': true,
             'access': accessToken,
             'refresh': refreshToken,
             'user': data['user'],
+            'email_verified': data['user']?['emailVerified'] ?? true,
           };
         } else {
           throw Exception('No tokens received from server');
@@ -66,8 +73,6 @@ class AuthService {
         throw Exception('Login failed. Status: ${response.statusCode}');
       }
     } catch (e) {
-      Logger.error('❌ [Auth] Login error: $e');
-      Logger.error('❌ [Auth] Stack trace: ${StackTrace.current}');
       return {
         'success': false,
         'error': e.toString(),
@@ -81,13 +86,10 @@ class AuthService {
     required String email,
     required String password,
     required String passwordConfirm,
-    String? fullName,
   }) async {
     try {
-      Logger.debug('📝 [Auth] Attempting signup with email: $email');
-
       final response = await http.post(
-        Uri.parse('$baseUrl/users/register/'),
+        Uri.parse('$baseUrl/users/register'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -95,13 +97,9 @@ class AuthService {
           'username': username,
           'email': email,
           'password': password,
-          'password_confirm': passwordConfirm,
-          if (fullName != null) 'fullName': fullName,
+          'fullName': username,
         }),
       ).timeout(const Duration(seconds: 10));
-
-      Logger.debug('✅ [Auth] Signup response status: ${response.statusCode}');
-      Logger.debug('📋 [Auth] Response body: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -118,7 +116,9 @@ class AuthService {
           final expiryTime = DateTime.now().add(const Duration(hours: 24)).toIso8601String();
           await _storage.write(key: _tokenExpiryKey, value: expiryTime);
           
-          Logger.debug('✅ [Auth] Signup successful! Tokens stored.');
+          // Update router auth state
+          AppRouter.updateAuthState(true);
+          
           return {
             'success': true,
             'access': accessToken,
@@ -139,8 +139,6 @@ class AuthService {
         throw Exception('Signup failed. Status: ${response.statusCode}');
       }
     } catch (e) {
-      Logger.error('❌ [Auth] Signup error: $e');
-      Logger.error('❌ [Auth] Stack trace: ${StackTrace.current}');
       return {
         'success': false,
         'error': e.toString(),
@@ -153,17 +151,14 @@ class AuthService {
     try {
       final token = await _storage.read(key: _accessTokenKey);
       if (token == null) {
-        Logger.debug('🔐 [Auth] No token found');
         return null;
       }
       
       // Check if token is expired
       final isExpired = await _isTokenExpired();
       if (isExpired) {
-        Logger.debug('⏰ [Auth] Token expired, attempting refresh...');
         final refreshed = await refreshToken();
         if (!refreshed) {
-          Logger.debug('❌ [Auth] Token refresh failed, logging out...');
           await logout();
           return null;
         }
@@ -171,10 +166,8 @@ class AuthService {
         return await _storage.read(key: _accessTokenKey);
       }
       
-      Logger.debug('🔐 [Auth] Token retrieved (length: ${token.length})');
       return token;
     } catch (e) {
-      Logger.error('❌ [Auth] Error retrieving token: $e');
       return null;
     }
   }
@@ -184,7 +177,6 @@ class AuthService {
     try {
       final expiryStr = await _storage.read(key: _tokenExpiryKey);
       if (expiryStr == null) {
-        Logger.debug('⏰ [Auth] No expiry time found, assuming expired');
         return true;
       }
       
@@ -192,16 +184,8 @@ class AuthService {
       final now = DateTime.now();
       final isExpired = now.isAfter(expiryTime);
       
-      if (isExpired) {
-        Logger.debug('⏰ [Auth] Token expired at $expiryTime (now: $now)');
-      } else {
-        final timeLeft = expiryTime.difference(now).inMinutes;
-        Logger.debug('⏰ [Auth] Token valid for $timeLeft more minutes');
-      }
-      
       return isExpired;
     } catch (e) {
-      Logger.error('❌ [Auth] Error checking token expiry: $e');
       return true; // Assume expired on error
     }
   }
@@ -209,52 +193,49 @@ class AuthService {
   // Refresh the access token
   static Future<bool> refreshToken() async {
     try {
-      Logger.debug('🔄 [Auth] Attempting token refresh...');
-      
       final refreshTokenValue = await _storage.read(key: _refreshTokenKey);
       if (refreshTokenValue == null) {
-        Logger.debug('❌ [Auth] No refresh token available');
         return false;
       }
 
       final response = await http.post(
-        Uri.parse('$baseUrl/users/token/refresh/'),
+        Uri.parse('$baseUrl/users/token/refresh'),
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'refresh': refreshTokenValue,
+          'refreshToken': refreshTokenValue,
         }),
       ).timeout(const Duration(seconds: 10));
 
-      Logger.debug('✅ [Auth] Token refresh response: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final newAccessToken = data['access'];
+        final newAccessToken = data['accessToken'] ?? data['access'];
+        final newRefreshToken = data['refreshToken'] ?? data['refresh'];
         
         if (newAccessToken != null) {
           // Update access token
           await _storage.write(key: _accessTokenKey, value: newAccessToken);
           
+          // Update refresh token (token rotation - backend issues new refresh token)
+          if (newRefreshToken != null) {
+            await _storage.write(key: _refreshTokenKey, value: newRefreshToken);
+          }
+          
           // Update expiry time (assuming 24 hours from now)
           final expiryTime = DateTime.now().add(const Duration(hours: 24)).toIso8601String();
           await _storage.write(key: _tokenExpiryKey, value: expiryTime);
           
-          Logger.debug('✅ [Auth] Token refreshed successfully!');
           return true;
         }
         return false;
       } else if (response.statusCode == 401) {
-        Logger.debug('❌ [Auth] Refresh token expired, need to login again');
         await logout();
         return false;
       } else {
-        Logger.debug('❌ [Auth] Token refresh failed: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      Logger.error('❌ [Auth] Error refreshing token: $e');
       return false;
     }
   }
@@ -268,7 +249,6 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      Logger.error('❌ [Auth] Error reading user data: $e');
       return null;
     }
   }
@@ -276,6 +256,8 @@ class AuthService {
   // Logout
   static Future<void> logout() async {
     try {
+      AppLogger.info('🔓 Starting logout process...');
+      
       // Get refresh token before clearing
       final refreshTokenValue = await _storage.read(key: _refreshTokenKey);
       
@@ -283,31 +265,39 @@ class AuthService {
       if (refreshTokenValue != null) {
         try {
           final accessToken = await _storage.read(key: _accessTokenKey);
-          final response = await http.post(
-            Uri.parse('$baseUrl/users/logout/'),
+          AppLogger.info('📤 Calling backend logout endpoint...');
+          await http.post(
+            Uri.parse('$baseUrl/users/logout'),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
             },
             body: jsonEncode({
-              'refresh': refreshTokenValue,
+              'refreshToken': refreshTokenValue,
             }),
           ).timeout(const Duration(seconds: 5));
+          AppLogger.info('✅ Backend logout successful');
           
-          Logger.debug('✅ [Auth] Backend logout response: ${response.statusCode}');
         } catch (e) {
-          Logger.error('❌ [Auth] Backend logout error (continuing with local logout): $e');
+          AppLogger.warning('⚠️ Backend logout failed, continuing with local logout: $e');
+          // Continue with local logout
         }
       }
       
       // Clear local tokens
+      AppLogger.info('🗑️ Clearing local tokens...');
       await _storage.delete(key: _accessTokenKey);
       await _storage.delete(key: _refreshTokenKey);
       await _storage.delete(key: _userKey);
       await _storage.delete(key: _tokenExpiryKey);
-      Logger.debug('✅ [Auth] Logged out successfully');
+      
+      // Update router auth state
+      AppRouter.updateAuthState(false);
+      
+      AppLogger.info('✅ Logout complete - all tokens cleared');
     } catch (e) {
-      Logger.error('❌ [Auth] Error logging out: $e');
+      AppLogger.error('❌ Logout error', error: e);
+      // Ignore logout errors
     }
   }
 

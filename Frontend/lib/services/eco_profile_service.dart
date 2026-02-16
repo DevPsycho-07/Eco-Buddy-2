@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'http_client.dart';
-import '../utils/logger.dart';
 import '../core/config/api_config.dart';
 
 /// Service for managing user's eco profile (one-time setup data)
@@ -11,11 +10,10 @@ class EcoProfileService {
   static Future<bool> hasCompletedSetup() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/profile/'),
+        Uri.parse('$baseUrl/predictions/profile'),
       );
       return response.statusCode == 200;
     } catch (e) {
-      Logger.error('❌ [EcoProfile] Error checking setup: $e');
       return false;
     }
   }
@@ -24,7 +22,7 @@ class EcoProfileService {
   static Future<Map<String, dynamic>?> getProfile() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/profile/'),
+        Uri.parse('$baseUrl/predictions/profile'),
       );
 
       if (response.statusCode == 200) {
@@ -32,7 +30,6 @@ class EcoProfileService {
       }
       return null;
     } catch (e) {
-      Logger.error('❌ [EcoProfile] Error getting profile: $e');
       return null;
     }
   }
@@ -54,10 +51,8 @@ class EcoProfileService {
     required String socialActivity,
   }) async {
     try {
-      Logger.debug('📝 [EcoProfile] Creating eco profile...');
-
       final response = await ApiClient.post(
-        Uri.parse('$baseUrl/predictions/profile/'),
+        Uri.parse('$baseUrl/predictions/profile'),
         body: jsonEncode({
           'householdSize': householdSize,
           'ageGroup': ageGroup,
@@ -72,28 +67,22 @@ class EcoProfileService {
           'compostingPracticed': compostingPracticed,
           'wasteBagSize': wasteBagSize,
           'socialActivity': socialActivity,
-          'renewableEnergyPercent': 0,
         }),
       );
 
-      Logger.debug('📊 [EcoProfile] Create response: ${response.statusCode}');
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
+      if (response.statusCode == 201) {
         return {
           'success': true,
           'data': jsonDecode(response.body),
         };
       } else {
-        Logger.error('❌ [EcoProfile] Failed with status ${response.statusCode}');
-        Logger.error('📋 [EcoProfile] Error response: ${response.body}');
         final error = jsonDecode(response.body);
         return {
           'success': false,
-          'error': error['error'] ?? error['message'] ?? 'Failed to create profile',
+          'error': error['error'] ?? 'Failed to create profile',
         };
       }
     } catch (e) {
-      Logger.error('❌ [EcoProfile] Error creating profile: $e');
       return {
         'success': false,
         'error': e.toString(),
@@ -118,29 +107,25 @@ class EcoProfileService {
     String? socialActivity,
   }) async {
     try {
-      Logger.debug('📝 [EcoProfile] Updating eco profile...');
-
       final Map<String, dynamic> body = {};
-      if (householdSize != null) body['household_size'] = householdSize;
-      if (ageGroup != null) body['age_group'] = ageGroup;
-      if (lifestyleType != null) body['lifestyle_type'] = lifestyleType;
-      if (locationType != null) body['location_type'] = locationType;
-      if (vehicleType != null) body['vehicle_type'] = vehicleType;
-      if (carFuelType != null) body['car_fuel_type'] = carFuelType;
-      if (dietType != null) body['diet_type'] = dietType;
-      if (usesSolarPanels != null) body['uses_solar_panels'] = usesSolarPanels;
-      if (smartThermostat != null) body['smart_thermostat'] = smartThermostat;
-      if (recyclingPracticed != null) body['recycling_practiced'] = recyclingPracticed;
-      if (compostingPracticed != null) body['composting_practiced'] = compostingPracticed;
-      if (wasteBagSize != null) body['waste_bag_size'] = wasteBagSize;
-      if (socialActivity != null) body['social_activity'] = socialActivity;
+      if (householdSize != null) body['householdSize'] = householdSize;
+      if (ageGroup != null) body['ageGroup'] = ageGroup;
+      if (lifestyleType != null) body['lifestyleType'] = lifestyleType;
+      if (locationType != null) body['locationType'] = locationType;
+      if (vehicleType != null) body['vehicleType'] = vehicleType;
+      if (carFuelType != null) body['carFuelType'] = carFuelType;
+      if (dietType != null) body['dietType'] = dietType;
+      if (usesSolarPanels != null) body['usesSolarPanels'] = usesSolarPanels;
+      if (smartThermostat != null) body['smartThermostat'] = smartThermostat;
+      if (recyclingPracticed != null) body['recyclingPracticed'] = recyclingPracticed;
+      if (compostingPracticed != null) body['compostingPracticed'] = compostingPracticed;
+      if (wasteBagSize != null) body['wasteBagSize'] = wasteBagSize;
+      if (socialActivity != null) body['socialActivity'] = socialActivity;
 
       final response = await ApiClient.put(
-        Uri.parse('$baseUrl/predictions/profile/'),
+        Uri.parse('$baseUrl/predictions/profile'),
         body: jsonEncode(body),
       );
-
-      Logger.debug('📊 [EcoProfile] Update response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         return {
@@ -155,7 +140,6 @@ class EcoProfileService {
         };
       }
     } catch (e) {
-      Logger.error('❌ [EcoProfile] Error updating profile: $e');
       return {
         'success': false,
         'error': e.toString(),
@@ -167,7 +151,7 @@ class EcoProfileService {
   static Future<Map<String, dynamic>?> getDashboard() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/dashboard/'),
+        Uri.parse('$baseUrl/predictions/dashboard'),
       );
 
       if (response.statusCode == 200) {
@@ -175,7 +159,6 @@ class EcoProfileService {
       }
       return null;
     } catch (e) {
-      Logger.error('❌ [EcoProfile] Error getting dashboard: $e');
       return null;
     }
   }
@@ -184,7 +167,7 @@ class EcoProfileService {
   static Future<Map<String, dynamic>?> getPrediction() async {
     try {
       final response = await ApiClient.post(
-        Uri.parse('$baseUrl/predictions/predict/'),
+        Uri.parse('$baseUrl/predictions/predict'),
         body: jsonEncode({}),
       );
 
@@ -193,7 +176,6 @@ class EcoProfileService {
       }
       return null;
     } catch (e) {
-      Logger.error('❌ [EcoProfile] Error getting prediction: $e');
       return null;
     }
   }

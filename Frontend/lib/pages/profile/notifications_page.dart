@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../services/http_client.dart';
-import '../../utils/logger.dart';
 import '../../core/config/api_config.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -40,7 +39,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
       );
 
       if (response.statusCode == 200) {
-        Logger.debug('✅ [Notifications] Settings saved');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -53,7 +51,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
         throw Exception('Failed to save settings');
       }
     } catch (e) {
-      Logger.error('❌ [Notifications] Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -149,6 +146,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
             const SizedBox(height: 8),
 
             Card(
+              elevation: 0,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? const Color(0xFF252525) 
+                  : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               margin: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [

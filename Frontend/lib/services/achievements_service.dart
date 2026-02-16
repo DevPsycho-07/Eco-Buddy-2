@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'http_client.dart';
-import '../utils/logger.dart';
 import '../core/config/api_config.dart';
 
 /// Service for managing achievements, badges, and challenges
@@ -11,7 +10,7 @@ class AchievementsService {
   static Future<Map<String, dynamic>?> getSummary() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/achievements/summary/'),
+        Uri.parse('$baseUrl/achievements/summary'),
       );
 
       if (response.statusCode == 200) {
@@ -19,7 +18,6 @@ class AchievementsService {
       }
       return null;
     } catch (e) {
-      Logger.error('❌ [Achievements] Error getting summary: $e');
       return null;
     }
   }
@@ -28,7 +26,7 @@ class AchievementsService {
   static Future<Map<String, dynamic>?> getBadgesSummary() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/achievements/my-badges/summary/'),
+        Uri.parse('$baseUrl/achievements/my-badges/summary'),
       );
 
       if (response.statusCode == 200) {
@@ -42,7 +40,6 @@ class AchievementsService {
       }
       return null;
     } catch (e) {
-      Logger.error('❌ [Achievements] Error getting badges summary: $e');
       return null;
     }
   }
@@ -51,7 +48,7 @@ class AchievementsService {
   static Future<List<dynamic>> getAllBadges() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/achievements/badges/'),
+        Uri.parse('$baseUrl/achievements/badges'),
       );
 
       if (response.statusCode == 200) {
@@ -59,7 +56,6 @@ class AchievementsService {
       }
       return [];
     } catch (e) {
-      Logger.error('❌ [Achievements] Error getting badges: $e');
       return [];
     }
   }
@@ -68,7 +64,7 @@ class AchievementsService {
   static Future<List<dynamic>> getEarnedBadges() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/achievements/my-badges/'),
+        Uri.parse('$baseUrl/achievements/my-badges'),
       );
 
       if (response.statusCode == 200) {
@@ -76,7 +72,6 @@ class AchievementsService {
       }
       return [];
     } catch (e) {
-      Logger.error('❌ [Achievements] Error getting earned badges: $e');
       return [];
     }
   }
@@ -85,7 +80,7 @@ class AchievementsService {
   static Future<List<dynamic>> getActiveChallenges() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/achievements/challenges/active/'),
+        Uri.parse('$baseUrl/achievements/challenges/active'),
       );
 
       if (response.statusCode == 200) {
@@ -93,7 +88,6 @@ class AchievementsService {
       }
       return [];
     } catch (e) {
-      Logger.error('❌ [Achievements] Error getting active challenges: $e');
       return [];
     }
   }
@@ -102,7 +96,7 @@ class AchievementsService {
   static Future<List<dynamic>> getUserActiveChallenges() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/achievements/my-challenges/active/'),
+        Uri.parse('$baseUrl/achievements/my-challenges/active'),
       );
 
       if (response.statusCode == 200) {
@@ -110,7 +104,6 @@ class AchievementsService {
       }
       return [];
     } catch (e) {
-      Logger.error('❌ [Achievements] Error getting user challenges: $e');
       return [];
     }
   }
@@ -119,7 +112,7 @@ class AchievementsService {
   static Future<List<dynamic>> getUserCompletedChallenges() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/achievements/my-challenges/completed/'),
+        Uri.parse('$baseUrl/achievements/my-challenges/completed'),
       );
 
       if (response.statusCode == 200) {
@@ -127,7 +120,6 @@ class AchievementsService {
       }
       return [];
     } catch (e) {
-      Logger.error('❌ [Achievements] Error getting completed challenges: $e');
       return [];
     }
   }
@@ -135,19 +127,12 @@ class AchievementsService {
   /// Join a challenge
   static Future<bool> joinChallenge(int challengeId) async {
     try {
-      Logger.debug('📝 [Achievements] Joining challenge: $challengeId');
-
       final response = await ApiClient.post(
-        Uri.parse('$baseUrl/achievements/my-challenges/'),
-        body: jsonEncode({
-          'challenge': challengeId,
-        }),
+        Uri.parse('$baseUrl/achievements/challenges/$challengeId/join'),
       );
 
-      Logger.debug('📊 [Achievements] Join response: ${response.statusCode}');
-      return response.statusCode == 201;
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      Logger.error('❌ [Achievements] Error joining challenge: $e');
       return false;
     }
   }
@@ -156,7 +141,7 @@ class AchievementsService {
   static Future<List<dynamic>> getAllUserChallenges() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/achievements/my-challenges/'),
+        Uri.parse('$baseUrl/achievements/my-challenges'),
       );
 
       if (response.statusCode == 200) {
@@ -171,7 +156,6 @@ class AchievementsService {
       }
       return [];
     } catch (e) {
-      Logger.error('❌ [Achievements] Error getting all user challenges: $e');
       return [];
     }
   }

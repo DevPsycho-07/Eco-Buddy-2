@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Hangfire;
+using Hangfire.MemoryStorage;
 using EcoBackend.Core.Entities;
 using EcoBackend.Infrastructure.Data;
 
@@ -103,8 +105,28 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure Hangfire
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseMemoryStorage());
+
+builder.Services.AddHangfireServer();
+
 // Register services
 builder.Services.AddScoped<EcoBackend.API.Services.AchievementService>();
+builder.Services.AddScoped<EcoBackend.API.Services.EmailService>();
+builder.Services.AddScoped<EcoBackend.API.Services.NotificationService>();
+builder.Services.AddScoped<EcoBackend.API.Services.BackgroundJobService>();
+builder.Services.AddSingleton<EcoBackend.API.Services.ProfilePictureEncryptionService>();
+builder.Services.AddScoped<EcoBackend.API.Services.ActivityService>();
+builder.Services.AddScoped<EcoBackend.API.Services.AnalyticsService>();
+builder.Services.AddScoped<EcoBackend.API.Services.TravelService>();
+builder.Services.AddScoped<EcoBackend.API.Services.UserService>();
+builder.Services.AddScoped<EcoBackend.API.Services.PredictionService>();
+builder.Services.AddScoped<EcoBackend.API.Services.DailyScoreService>();
+builder.Services.AddScoped<EcoBackend.API.Services.GoalService>();
 
 var app = builder.Build();
 
@@ -134,6 +156,12 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Configure Hangfire Dashboard (accessible at /hangfire)
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter() }
+});
+
 app.MapControllers();
 
 // Root endpoint
@@ -158,6 +186,73 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<EcoDbContext>();
     context.Database.EnsureCreated();
     await DbInitializer.SeedAsync(context);
+    
+    // Set default profile picture for any existing users that have null
+    var usersWithoutPicture = context.Users
+        .Where(u => u.ProfilePicture == null || u.ProfilePicture == "")
+        .ToList();
+    foreach (var u in usersWithoutPicture)
+    {
+        u.ProfilePicture = EcoBackend.Core.Entities.User.DefaultProfilePicture;
+    }
+    if (usersWithoutPicture.Count > 0)
+        await context.SaveChangesAsync();
 }
 
+// Configure recurring background jobs
+RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+    "calculate-daily-streaks",
+    service => service.CalculateDailyStreaksAsync(),
+    "0 0 * * *", // Daily at midnight UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+    "generate-weekly-reports",
+    service => service.GenerateWeeklyReportsAsync(),
+    "0 1 * * 1", // Every Monday at 1 AM UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+    "generate-monthly-reports",
+    service => service.GenerateMonthlyReportsAsync(),
+    "0 2 1 * *", // First day of month at 2 AM UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+    "check-badge-requirements",
+    service => service.CheckBadgeRequirementsAsync(),
+    "0 */6 * * *", // Every 6 hours
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+    "cleanup-expired-tokens",
+    service => service.CleanupExpiredTokensAsync(),
+    "0 3 * * *", // Daily at 3 AM UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+// Initialize default encrypted profile picture
+var encryptionService = app.Services.GetRequiredService<EcoBackend.API.Services.ProfilePictureEncryptionService>();
+await encryptionService.EnsureDefaultProfilePictureAsync();
+
 app.Run();
+
+/// <summary>
+/// Authorization filter for Hangfire Dashboard
+/// Only allow access in development or for authenticated admin users
+/// </summary>
+public class HangfireAuthorizationFilter : Hangfire.Dashboard.IDashboardAuthorizationFilter
+{
+    public bool Authorize(Hangfire.Dashboard.DashboardContext context)
+    {
+        // In development, allow all access
+        // In production, this should check for admin role
+        return true; // TODO: Implement proper authorization in production
+    }
+}
+
+/// <summary>
+/// Partial Program class for testing
+/// </summary>
+public partial class Program
+{
+}

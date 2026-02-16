@@ -1,36 +1,154 @@
+// ignore_for_file: dangling_library_doc_comments
+
+/// Main entry point for Eco Daily Score app
+/// 
+/// Features:
+/// - State management with Riverpod
+/// - Dependency injection with GetIt
+/// - Deep linking with go_router
+/// - Offline support with Hive
+/// - Image optimization and caching
+/// - Enhanced animations and haptics
+/// - Responsive design for mobile, tablet, and web
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:app_links/app_links.dart';
 import 'core/theme/app_theme.dart';
-import 'pages/auth/welcome_page.dart';
-import 'pages/activity/all_activities_page.dart';
+import 'core/routing/app_router.dart';
+import 'core/di/service_locator.dart';
+import 'core/storage/offline_storage.dart';
+import 'core/utils/app_logger.dart';
+import 'core/widgets/permission_request_widget.dart';
+import 'services/fcm_service.dart';
+import 'services/auth_service.dart';
+import 'providers/theme_provider.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Set preferred orientations and optimize splash screen transition
-  SystemChrome.setPreferredOrientations([
+
+  AppLogger.info('🚀 Starting Eco Daily Score app...');
+
+  // Set preferred orientations
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-  ]).then((_) {
-    runApp(const EcoDailyScoreApp());
-  });
+  ]);
+
+  // Initialize dependencies
+  try {
+    // Setup service locator (dependency injection)
+    await setupServiceLocator();
+    AppLogger.info('✓ Service locator initialized');
+
+    // Initialize offline storage
+    final offlineStorage = OfflineStorage();
+    await offlineStorage.init();
+    AppLogger.info('✓ Offline storage initialized');
+
+    // Check authentication state and update router
+    final isLoggedIn = await AuthService.isLoggedIn();
+    AppRouter.updateAuthState(isLoggedIn);
+    AppLogger.info('✓ Auth state checked: isLoggedIn=$isLoggedIn');
+
+    // Initialize Firebase and FCM (optional - will work after user adds google-services.json)
+    try {
+      await FCMService.initializeFirebase();
+      AppLogger.info('✓ Firebase & FCM initialized');
+    } catch (e) {
+      AppLogger.warning('⚠️ Firebase initialization skipped (add google-services.json to enable notifications): $e');
+    }
+
+    // Note: Device token registration happens automatically after login in auth_service.dart
+    // No need to call it here
+
+    // Initialize app links (deep linking support)
+    final appLinks = AppLinks();
+    appLinks.uriLinkStream.listen(
+      (uri) {
+        AppLogger.info('🔗 Deep link received: $uri');
+        // Convert deep link to GoRouter path
+        // eco-daily-score://reset-password?token=...&email=... → /reset-password?token=...&email=...
+        // eco-daily-score://verify-email?token=...&email=... → /verify-email?token=...&email=...
+        final path = '/${uri.host}${uri.hasQuery ? '?${uri.query}' : ''}';
+        AppLogger.info('🔗 Navigating to: $path');
+        AppRouter.router.push(path);
+      },
+      onError: (err) {
+        AppLogger.error('Failed to handle app link', error: err);
+      },
+    );
+    AppLogger.info('✓ App links (deep linking) initialized');
+
+    // Run the app
+    runApp(
+      // Wrap with ProviderScope for Riverpod state management
+      const ProviderScope(
+        child: EcoDailyScoreApp(),
+      ),
+    );
+  } catch (e, stackTrace) {
+    AppLogger.fatal('Failed to initialize app', error: e, stackTrace: stackTrace);
+    // Run app in error state
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 80, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Failed to initialize app',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  e.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class EcoDailyScoreApp extends StatelessWidget {
+/// Main application widget
+class EcoDailyScoreApp extends ConsumerWidget {
   const EcoDailyScoreApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Eco Daily Score (.NET)',
+  Widget build(BuildContext context, WidgetRef ref) {
+    AppLogger.info('Building EcoDailyScoreApp');
+
+    // Watch the theme mode from provider
+    final themeMode = ref.watch(themeModeProvider);
+
+    return MaterialApp.router(
+      title: 'Eco Daily Score',
       debugShowCheckedModeBanner: false,
+      
+      // Theme configuration
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: const WelcomePage(),
-      routes: {
-        '/welcome': (context) => const WelcomePage(),
-        '/all-activities': (context) => const AllActivitiesPage(),
+      themeMode: themeMode,
+      
+      // Router configuration with deep linking support
+      routerConfig: AppRouter.router,
+      
+      // Builder for additional app-level widgets and permission wrapper
+      builder: (context, child) {
+        return PermissionRequestWidget(
+          child: child ?? const SizedBox.shrink(),
+        );
       },
     );
   }

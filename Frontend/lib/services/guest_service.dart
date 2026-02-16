@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../utils/logger.dart';
 
 /// Service to manage guest mode with unique device identification
 class GuestService {
@@ -21,10 +20,9 @@ class GuestService {
     
     try {
       // Check if we already have a guest ID stored
-      String? existingId = await _storage.read(key: _guestIdKey);
+      final String? existingId = await _storage.read(key: _guestIdKey);
       
       if (existingId != null && existingId.isNotEmpty) {
-        Logger.debug('🎭 [Guest] Found existing guest ID: ${_maskId(existingId)}');
         _cachedGuestId = existingId;
         return existingId;
       }
@@ -39,12 +37,10 @@ class GuestService {
         value: DateTime.now().toIso8601String()
       );
       
-      Logger.debug('🎭 [Guest] Created new guest ID: ${_maskId(newGuestId)}');
       _cachedGuestId = newGuestId;
       return newGuestId;
       
     } catch (e) {
-      Logger.error('❌ [Guest] Error getting/creating guest ID: $e');
       // Fallback to a temporary ID if storage fails
       final fallbackId = _generateUniqueId();
       _cachedGuestId = fallbackId;
@@ -77,17 +73,10 @@ class GuestService {
     return buffer.toString();
   }
   
-  /// Mask the guest ID for logging (show only first and last 4 characters)
-  static String _maskId(String id) {
-    if (id.length <= 12) return id;
-    return '${id.substring(0, 8)}...${id.substring(id.length - 4)}';
-  }
-  
   /// Start a guest session
   static Future<void> startGuestSession() async {
-    final guestId = await getOrCreateGuestId();
+    await getOrCreateGuestId();
     await _storage.write(key: _guestSessionKey, value: 'true');
-    Logger.debug('🎭 [Guest] Started guest session with ID: ${_maskId(guestId)}');
   }
   
   /// Check if currently in guest mode
@@ -99,7 +88,6 @@ class GuestService {
   /// End the guest session (when user signs up or logs in)
   static Future<void> endGuestSession() async {
     await _storage.delete(key: _guestSessionKey);
-    Logger.debug('🎭 [Guest] Ended guest session');
   }
   
   /// Get the current guest ID (returns null if no guest ID exists)
@@ -149,7 +137,6 @@ class GuestService {
     await _storage.delete(key: _guestSessionKey);
     await _storage.delete(key: _guestCreatedAtKey);
     _cachedGuestId = null;
-    Logger.debug('🎭 [Guest] Cleared all guest data');
   }
   
   /// Check if the device has been used as guest before

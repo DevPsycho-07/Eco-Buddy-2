@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'package:go_router/go_router.dart';
 import '../../services/http_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/guest_service.dart';
-import '../../utils/logger.dart';
 import '../../core/config/api_config.dart';
-import '../auth/welcome_page.dart';
+import '../../core/widgets/secure_profile_picture_avatar.dart';
 import 'edit_profile_page.dart';
 import 'notifications_page.dart';
 import 'help_support_page.dart';
@@ -21,7 +22,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late Future<Map<String, dynamic>> _profileDataFuture;
-  int? _userRank;
   String? _errorMessage;
 
   @override
@@ -40,16 +40,16 @@ class _ProfilePageState extends State<ProfilePage> {
         'id': 0,
         'username': 'Guest',
         'email': 'guest@example.com',
-        'first_name': 'Guest',
-        'last_name': 'User',
+        'firstName': 'Guest',
+        'lastName': 'User',
         'bio': 'Exploring the app',
-        'profile_picture': null,
-        'eco_score': 0,
-        'total_co2_saved': 0.0,
-        'current_streak': 0,
-        'longest_streak': 0,
+        'profilePicture': null,
+        'ecoScore': 0,
+        'totalCO2Saved': 0.0,
+        'currentStreak': 0,
+        'longestStreak': 0,
         'level': 1,
-        'experience_points': 0,
+        'experiencePoints': 0,
         'rank': null,
         'is_guest': true,
       };
@@ -58,15 +58,10 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       const baseUrl = ApiConfig.baseUrl;
       
-      Logger.debug('🔍 [Profile] Fetching profile from: $baseUrl/users/profile/');
-
       // Fetch user profile using ApiClient (handles token refresh on 401)
       final profileResponse = await ApiClient.get(
-        Uri.parse('$baseUrl/users/profile/'),
+        Uri.parse('$baseUrl/users/profile'),
       );
-
-      Logger.debug('✅ [Profile] Response status code: ${profileResponse.statusCode}');
-      Logger.debug('📋 [Profile] Response body: ${profileResponse.body}');
 
       if (profileResponse.statusCode != 200) {
         throw Exception(
@@ -75,66 +70,23 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final profileData = jsonDecode(profileResponse.body);
       
-      // Normalize camelCase to snake_case for consistency
-      if (profileData.containsKey('firstName')) {
-        profileData['first_name'] = profileData['firstName'];
-      }
-      if (profileData.containsKey('lastName')) {
-        profileData['last_name'] = profileData['lastName'];
-      }
-      if (profileData.containsKey('ecoScore')) {
-        profileData['eco_score'] = profileData['ecoScore'];
-      }
-      if (profileData.containsKey('profilePicture')) {
-        profileData['profile_picture'] = profileData['profilePicture'];
-      }
-      if (profileData.containsKey('totalCO2Saved')) {
-        profileData['total_co2_saved'] = profileData['totalCO2Saved'];
-      }
-      if (profileData.containsKey('currentStreak')) {
-        profileData['current_streak'] = profileData['currentStreak'];
-      }
-      if (profileData.containsKey('longestStreak')) {
-        profileData['longest_streak'] = profileData['longestStreak'];
-      }
-      if (profileData.containsKey('experiencePoints')) {
-        profileData['experience_points'] = profileData['experiencePoints'];
-      }
-      if (profileData.containsKey('notificationsEnabled')) {
-        profileData['notifications_enabled'] = profileData['notificationsEnabled'];
-      }
-      if (profileData.containsKey('darkMode')) {
-        profileData['dark_mode'] = profileData['darkMode'];
-      }
-      if (profileData.containsKey('createdAt')) {
-        profileData['created_at'] = profileData['createdAt'];
-      }
-      
-      Logger.debug('✅ [Profile] Successfully parsed profile data');
+      // Note: profile_picture is not used directly anymore
+      // SecureProfilePictureAvatar widget fetches decrypted image via API
 
       // Fetch user rank
-      Logger.debug('🔍 [Rank] Fetching rank from: $baseUrl/users/my-rank/');
       final rankResponse = await ApiClient.get(
-        Uri.parse('$baseUrl/users/my-rank/'),
+        Uri.parse('$baseUrl/users/my-rank'),
       );
-
-      Logger.debug('✅ [Rank] Response status code: ${rankResponse.statusCode}');
 
       if (rankResponse.statusCode == 200) {
         final rankData = jsonDecode(rankResponse.body);
-        _userRank = rankData['rank'];
         profileData['rank'] = rankData['rank'];
-        Logger.debug('✅ [Rank] User rank: $_userRank');
       } else {
-        Logger.debug('⚠️ [Rank] Failed to fetch rank. Status: ${rankResponse.statusCode}');
         profileData['rank'] = null;
       }
 
-      Logger.debug('✅ [Profile] All data fetched successfully!');
       return profileData;
     } catch (e) {
-      Logger.error('❌ [Profile] Error: $e');
-      Logger.error('❌ [Profile] Stack trace: ${StackTrace.current}');
       _handleError(e);
       rethrow;
     }
@@ -145,17 +97,13 @@ class _ProfilePageState extends State<ProfilePage> {
       if (error is TimeoutException) {
         _errorMessage =
             'Connection timeout. Please check your internet connection.';
-        Logger.debug('⏱️ [Error] Timeout: $_errorMessage');
       } else if (error.toString().contains('Session expired')) {
         _errorMessage = error.toString();
-        Logger.debug('🔐 [Error] Session error: $_errorMessage');
       } else if (error.toString().contains('Failed to load')) {
         _errorMessage = error.toString();
-        Logger.debug('❌ [Error] Load failed: $_errorMessage');
       } else {
         _errorMessage =
             'An error occurred while loading your profile. Please try again.';
-        Logger.error('❌ [Error] Unknown error: ${error.toString()}');
       }
     });
   }
@@ -311,7 +259,10 @@ class _ProfilePageState extends State<ProfilePage> {
           
           // Profile Header Card - ID Card Style (Landscape)
           Card(
-            elevation: 8,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
@@ -341,17 +292,20 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ],
                           ),
-                          child: CircleAvatar(
+                          child: SecureProfilePictureAvatar(
+                            key: ValueKey(profileData['profilePicture']),
                             radius: 40,
                             backgroundColor: Colors.white,
-                            backgroundImage: (profileData['profile_picture'] !=
-                                    null)
-                                ? NetworkImage('${ApiConfig.baseUrl.replaceAll('/api', '')}${profileData['profile_picture']}')
-                                : null,
-                            child: (profileData['profile_picture'] == null)
-                                ? const Icon(Icons.person,
-                                    size: 40, color: Colors.green)
-                                : null,
+                            placeholder: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.green[400]!),
+                              ),
+                            ),
+                            errorWidget: const Icon(Icons.person,
+                                size: 40, color: Colors.green),
                           ),
                         ),
                       ],
@@ -371,9 +325,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${profileData['first_name'] ?? ''} ${profileData['last_name'] ?? ''}'.trim().isEmpty 
-                                    ? 'No Name Set' 
-                                    : '${profileData['first_name'] ?? ''} ${profileData['last_name'] ?? ''}'.trim(),
+                                '${profileData['firstName'] ?? ''} ${profileData['lastName'] ?? ''}'.trim(),
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -406,7 +358,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Since ${_formatDate(profileData['created_at'])}',
+                                'Since ${_formatDate(profileData['createdAt'])}',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.8),
                                   fontSize: 10,
@@ -420,13 +372,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             runSpacing: 8,
                             children: [
                               _buildCompactStat(
-                                  '${profileData['eco_score']}', 'Score'),
+                                  '${profileData['ecoScore'] ?? 0}', 'Score'),
                               _buildCompactStat(
                                   '#${profileData['rank'] ?? '...'}', 'Rank'),
                               _buildCompactStat(
                                   '${profileData['level'] ?? 1}', 'Level'),
                               _buildCompactStat(
-                                  '${(profileData['experience_points'] ?? 0)}', 'XP'),
+                                  '${(profileData['experiencePoints'] ?? 0)}', 'XP'),
                             ],
                           ),
                         ],
@@ -441,6 +393,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
           // Impact Summary Card
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF252525)
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -470,7 +429,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Expanded(
                         child: _buildImpactCard(
-                            '${profileData['total_co2_saved']?.toStringAsFixed(1) ?? '0'} kg',
+                            '${profileData['totalCO2Saved']?.toStringAsFixed(1) ?? profileData['totalCo2Saved']?.toStringAsFixed(1) ?? '0'} kg',
                             'CO₂ Saved',
                             Icons.cloud_off,
                             Colors.green),
@@ -478,7 +437,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildImpactCard(
-                            '${((profileData['total_co2_saved'] ?? 0) / 12).toStringAsFixed(1)}',
+                            '${((profileData['totalCO2Saved'] ?? profileData['totalCo2Saved'] ?? 0) / 12).toStringAsFixed(1)}',
                             'Trees Equiv.',
                             Icons.park,
                             Colors.teal),
@@ -490,7 +449,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Expanded(
                         child: _buildImpactCard(
-                            '${profileData['current_streak'] ?? 0}',
+                            '${profileData['currentStreak'] ?? 0}',
                             'Current Streak',
                             Icons.local_fire_department,
                             Colors.orange),
@@ -498,7 +457,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildImpactCard(
-                            '${profileData['longest_streak'] ?? 0}',
+                            '${profileData['longestStreak'] ?? 0}',
                             'Best Streak',
                             Icons.emoji_events,
                             Colors.blue.withValues(alpha: 1.0)),
@@ -514,6 +473,13 @@ class _ProfilePageState extends State<ProfilePage> {
           // Bio Section
           if (profileData['bio'] != null && profileData['bio'].isNotEmpty)
             Card(
+              elevation: 0,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF252525)
+                  : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -537,7 +503,13 @@ class _ProfilePageState extends State<ProfilePage> {
           // Guest Mode Banner
           if (profileData['is_guest'] == true)
             Card(
-              color: Colors.orange[50],
+              elevation: 0,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.orange.shade900.withValues(alpha: 0.25)
+                  : Colors.orange[50],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -566,14 +538,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          GuestService.endGuestSession();
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                              builder: (context) => const WelcomePage(),
-                            ),
-                            (route) => false,
-                          );
+                        onPressed: () async {
+                          final navigator = context;
+                          await GuestService.endGuestSession();
+                          if (mounted) {
+                            // Use post-frame callback to avoid navigating during widget disposal
+                            SchedulerBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) {
+                                // Use go_router to navigate and clear the stack
+                                navigator.go('/welcome');
+                              }
+                            });
+                          }
                         },
                         icon: const Icon(Icons.person_add),
                         label: const Text('Create Account'),
@@ -591,6 +567,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
           // Account Options
           Card(
+            elevation: 0,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF252525)
+                : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
               children: [
                 if (profileData['is_guest'] != true) ...[
@@ -662,10 +645,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
 
   Widget _buildImpactCard(String value, String label, IconData icon, Color color) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: isDarkMode 
+            ? color.withValues(alpha: 0.15)
+            : color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -785,7 +771,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _navigateToEditProfile(Map<String, dynamic> profileData) async {
+  Future<void> _navigateToEditProfile(Map<String, dynamic> profileData) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -806,7 +792,7 @@ class _ProfilePageState extends State<ProfilePage> {
       context,
       MaterialPageRoute(
         builder: (context) => NotificationsPage(
-          notificationsEnabled: profileData['notifications_enabled'] ?? true,
+          notificationsEnabled: profileData['notificationsEnabled'] ?? true,
         ),
       ),
     );
@@ -843,35 +829,29 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              
-              // Show loading indicator
-              showDialog(
-                context: this.context,
-                barrierDismissible: false,
-                builder: (context) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
+              // Capture all needed references before async operations
+              final navigatorContext = context;
+              final router = GoRouter.of(navigatorContext);
+              final navigator = Navigator.of(navigatorContext);
+              final messenger = ScaffoldMessenger.of(navigatorContext);
               
               try {
+                // Close dialog first
+                navigator.pop();
+                
+                // Then logout - this clears all local tokens
                 await AuthService.logout();
                 
+                // Small delay to ensure tokens are cleared
+                await Future.delayed(const Duration(milliseconds: 500));
+                
+                // Finally navigate to login/welcome
                 if (mounted) {
-                  Navigator.pop(this.context); // Close loading
-                  // Navigate to welcome page and clear stack
-                  Navigator.of(this.context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                      builder: (context) => const WelcomePage(),
-                    ),
-                    (route) => false,
-                  );
+                  router.go('/welcome');
                 }
               } catch (e) {
-                Logger.error('❌ [Logout] Error: $e');
                 if (mounted) {
-                  Navigator.pop(this.context); // Close loading
-                  ScaffoldMessenger.of(this.context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Logout failed: $e'),
                       backgroundColor: Colors.red,
@@ -910,30 +890,34 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           OutlinedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              final navigator = context;
+              Navigator.pop(context); // Close dialog
               await GuestService.endGuestSession();
               if (mounted) {
-                Navigator.of(this.context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => const WelcomePage(),
-                  ),
-                  (route) => false,
-                );
+                // Use post-frame callback to avoid navigating during widget disposal
+                SchedulerBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    // Use go_router to navigate and clear the stack
+                    navigator.go('/welcome');
+                  }
+                });
               }
             },
             child: const Text('Exit'),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              final navigator = context;
+              Navigator.pop(context); // Close dialog
               await GuestService.endGuestSession();
               if (mounted) {
-                Navigator.of(this.context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => const WelcomePage(),
-                  ),
-                  (route) => false,
-                );
+                // Use post-frame callback to avoid navigating during widget disposal
+                SchedulerBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    // Use go_router to navigate and clear the stack
+                    navigator.go('/welcome');
+                  }
+                });
               }
             },
             style: ElevatedButton.styleFrom(

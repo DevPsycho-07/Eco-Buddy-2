@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../core/config/api_config.dart';
-import '../utils/logger.dart';
 import 'http_client.dart';
 
 /// Model for user profile/dashboard data
@@ -41,16 +40,16 @@ class UserDashboard {
       id: json['id'] ?? 0,
       email: json['email'] ?? '',
       username: json['username'] ?? '',
-      firstName: json['first_name'] ?? '',
-      lastName: json['last_name'] ?? '',
-      profilePicture: json['profile_picture'],
+      firstName: json['firstName'] ?? '',
+      lastName: json['lastName'] ?? '',
+      profilePicture: json['profilePicture'],
       bio: json['bio'] ?? '',
-      ecoScore: json['eco_score'] ?? 0,
-      totalCo2Saved: (json['total_co2_saved'] ?? 0).toDouble(),
-      currentStreak: json['current_streak'] ?? 0,
-      longestStreak: json['longest_streak'] ?? 0,
+      ecoScore: json['ecoScore'] ?? 0,
+      totalCo2Saved: (json['totalCO2Saved'] ?? json['totalCo2Saved'] ?? 0).toDouble(),
+      currentStreak: json['currentStreak'] ?? 0,
+      longestStreak: json['longestStreak'] ?? 0,
       level: json['level'] ?? 1,
-      experiencePoints: json['experience_points'] ?? 0,
+      experiencePoints: json['experiencePoints'] ?? 0,
     );
   }
 
@@ -82,8 +81,8 @@ class DailyScore {
     return DailyScore(
       date: json['date'] ?? '',
       score: json['score'] ?? 0,
-      co2Emitted: (json['co2_emitted'] ?? 0).toDouble(),
-      co2Saved: (json['co2_saved'] ?? 0).toDouble(),
+      co2Emitted: (json['co2Emitted'] ?? json['cO2Emitted'] ?? 0).toDouble(),
+      co2Saved: (json['co2Saved'] ?? json['cO2Saved'] ?? 0).toDouble(),
       steps: json['steps'] ?? 0,
     );
   }
@@ -118,12 +117,12 @@ class UserGoal {
       id: json['id'] ?? 0,
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      targetValue: (json['target_value'] ?? 0).toDouble(),
-      currentValue: (json['current_value'] ?? 0).toDouble(),
+      targetValue: (json['targetValue'] ?? 0).toDouble(),
+      currentValue: (json['currentValue'] ?? 0).toDouble(),
       unit: json['unit'] ?? '',
-      isCompleted: json['is_completed'] ?? false,
+      isCompleted: json['isCompleted'] ?? false,
       deadline: json['deadline'],
-      progressPercentage: (json['progress_percentage'] ?? 0).toDouble(),
+      progressPercentage: (json['progressPercentage'] ?? 0).toDouble(),
     );
   }
 }
@@ -161,14 +160,14 @@ class Challenge {
       id: json['id'] ?? 0,
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      challengeType: json['challenge_type'] ?? '',
-      targetValue: (json['target_value'] ?? 0).toDouble(),
-      targetUnit: json['target_unit'] ?? '',
-      pointsReward: json['points_reward'] ?? 0,
-      startDate: json['start_date'] ?? '',
-      endDate: json['end_date'] ?? '',
-      userProgress: json['user_progress']?.toDouble(),
-      isCompleted: json['is_completed'],
+      challengeType: json['challengeType'] ?? '',
+      targetValue: (json['targetValue'] ?? 0).toDouble(),
+      targetUnit: json['targetUnit'] ?? '',
+      pointsReward: json['pointsReward'] ?? 0,
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
+      userProgress: json['currentProgress']?.toDouble() ?? json['userProgress']?.toDouble(),
+      isCompleted: json['isCompleted'],
     );
   }
 }
@@ -180,16 +179,13 @@ class DashboardService {
 
   /// Get user profile/dashboard data
   static Future<UserDashboard> getUserProfile() async {
-    final url = Uri.parse('$_usersUrl/profile/');
-
-    Logger.debug('👤 [DashboardService] Fetching user profile');
+    final url = Uri.parse('$_usersUrl/profile');
 
     try {
       final response = await ApiClient.get(url);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        Logger.debug('✅ [DashboardService] Profile fetched');
         return UserDashboard.fromJson(data);
       } else if (response.statusCode == 401) {
         throw DashboardException(
@@ -202,23 +198,19 @@ class DashboardService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [DashboardService] Network error: $e');
+    } on http.ClientException {
       throw DashboardException(
         'Network error. Please check your internet connection and ensure the server is running.',
       );
     } catch (e) {
       if (e is DashboardException) rethrow;
-      Logger.error('❌ [DashboardService] Error: $e');
       throw DashboardException('Failed to load profile: ${e.toString()}');
     }
   }
 
   /// Get user's daily scores
   static Future<List<DailyScore>> getDailyScores({int days = 7}) async {
-    final url = Uri.parse('$_usersUrl/daily-scores/?days=$days');
-
-    Logger.debug('📊 [DashboardService] Fetching daily scores');
+    final url = Uri.parse('$_usersUrl/daily-scores?days=$days');
 
     try {
       final response = await ApiClient.get(url);
@@ -237,23 +229,19 @@ class DashboardService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [DashboardService] Network error: $e');
+    } on http.ClientException {
       throw DashboardException(
         'Network error. Please check your internet connection.',
       );
     } catch (e) {
       if (e is DashboardException) rethrow;
-      Logger.error('❌ [DashboardService] Error: $e');
       throw DashboardException('Failed to load daily scores: ${e.toString()}');
     }
   }
 
   /// Get user's goals
   static Future<List<UserGoal>> getUserGoals() async {
-    final url = Uri.parse('$_usersUrl/goals/');
-
-    Logger.debug('🎯 [DashboardService] Fetching user goals');
+    final url = Uri.parse('$_usersUrl/goals');
 
     try {
       final response = await ApiClient.get(url);
@@ -272,23 +260,19 @@ class DashboardService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [DashboardService] Network error: $e');
+    } on http.ClientException {
       throw DashboardException(
         'Network error. Please check your internet connection.',
       );
     } catch (e) {
       if (e is DashboardException) rethrow;
-      Logger.error('❌ [DashboardService] Error: $e');
       throw DashboardException('Failed to load goals: ${e.toString()}');
     }
   }
 
   /// Get active challenges
   static Future<List<Challenge>> getActiveChallenges() async {
-    final url = Uri.parse('$_achievementsUrl/challenges/active/');
-
-    Logger.debug('🏆 [DashboardService] Fetching active challenges');
+    final url = Uri.parse('$_achievementsUrl/challenges/active');
 
     try {
       final response = await ApiClient.get(url);
@@ -306,16 +290,13 @@ class DashboardService {
         return [];
       }
     } catch (e) {
-      Logger.error('❌ [DashboardService] Error fetching challenges: $e');
       return [];
     }
   }
 
   /// Get leaderboard
   static Future<List<Map<String, dynamic>>> getLeaderboard({int limit = 10}) async {
-    final url = Uri.parse('$_usersUrl/leaderboard/?limit=$limit');
-
-    Logger.debug('🏅 [DashboardService] Fetching leaderboard');
+    final url = Uri.parse('$_usersUrl/leaderboard?limit=$limit');
 
     try {
       final response = await ApiClient.get(url);
@@ -332,7 +313,6 @@ class DashboardService {
         return [];
       }
     } catch (e) {
-      Logger.error('❌ [DashboardService] Error: $e');
       return [];
     }
   }

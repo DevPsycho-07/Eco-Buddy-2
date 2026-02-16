@@ -125,6 +125,13 @@ class HelpSupportPage extends StatelessWidget {
             const SizedBox(height: 8),
 
             Card(
+              elevation: 0,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? const Color(0xFF252525) 
+                  : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               margin: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
@@ -186,6 +193,13 @@ class HelpSupportPage extends StatelessWidget {
             const SizedBox(height: 8),
 
             Card(
+              elevation: 0,
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? const Color(0xFF252525) 
+                  : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               margin: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [

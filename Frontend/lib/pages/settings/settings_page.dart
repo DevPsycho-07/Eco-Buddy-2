@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../providers/theme_provider.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
-  bool _darkMode = false;
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _notifications = true;
   String _units = 'Metric';
 
   @override
   Widget build(BuildContext context) {
+    // Get the current theme mode from provider
+    final themeMode = ref.watch(themeModeProvider);
+    final isDarkMode = themeMode == ThemeMode.dark;
+    
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -22,8 +28,10 @@ class _SettingsPageState extends State<SettingsPage> {
           SwitchListTile(
             title: const Text('Dark Mode'),
             subtitle: const Text('Use dark theme'),
-            value: _darkMode,
-            onChanged: (value) => setState(() => _darkMode = value),
+            value: isDarkMode,
+            onChanged: (value) {
+              ref.read(themeModeProvider.notifier).toggleTheme(value);
+            },
           ),
           
           _buildSection('Units & Preferences'),
@@ -50,6 +58,12 @@ class _SettingsPageState extends State<SettingsPage> {
           
           _buildSection('Data & Sync'),
           ListTile(
+            title: const Text('Background Services'),
+            subtitle: const Text('GPS tracking, sync, performance'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/background-settings'),
+          ),
+          ListTile(
             title: const Text('Sync Frequency'),
             subtitle: const Text('Every 15 minutes'),
             trailing: const Icon(Icons.chevron_right),
@@ -62,9 +76,9 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           
           _buildSection('About'),
-          ListTile(
-            title: const Text('App Version'),
-            subtitle: const Text('1.0.0'),
+          const ListTile(
+            title: Text('App Version'),
+            subtitle: Text('1.0.0'),
           ),
           ListTile(
             title: const Text('Terms of Service'),

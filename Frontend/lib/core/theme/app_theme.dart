@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppTheme {
   static const Color primaryGreen = Color(0xFF43A047);
@@ -28,6 +29,11 @@ class AppTheme {
       backgroundColor: Colors.transparent,
       foregroundColor: primaryGreen,
       iconTheme: IconThemeData(color: primaryGreen),
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark, // Dark icons for light mode
+        statusBarBrightness: Brightness.light, // Light background for light mode
+      ),
     ),
     cardTheme: CardThemeData(
       elevation: 0,
@@ -100,6 +106,11 @@ class AppTheme {
     appBarTheme: const AppBarTheme(
       centerTitle: true,
       elevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light, // Light icons for dark mode
+        statusBarBrightness: Brightness.dark, // Dark background for dark mode
+      ),
     ),
     cardTheme: CardThemeData(
       elevation: 0,

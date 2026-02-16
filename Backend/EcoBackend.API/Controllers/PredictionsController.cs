@@ -1,10 +1,8 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using EcoBackend.Core.Entities;
-using EcoBackend.Infrastructure.Data;
 using EcoBackend.API.DTOs;
+using EcoBackend.API.Services;
 
 namespace EcoBackend.API.Controllers;
 
@@ -13,93 +11,88 @@ namespace EcoBackend.API.Controllers;
 [Authorize]
 public class PredictionsController : ControllerBase
 {
-    private readonly EcoDbContext _context;
-    
-    public PredictionsController(EcoDbContext context)
+    private readonly PredictionService _predictionService;
+
+    public PredictionsController(PredictionService predictionService)
     {
-        _context = context;
+        _predictionService = predictionService;
     }
-    
+
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        
-        var profile = await _context.UserEcoProfiles
-            .FirstOrDefaultAsync(p => p.UserId == userId);
-        
+        var profile = await _predictionService.GetProfileAsync(userId);
         return Ok(profile);
     }
-    
+
     [HttpPost("profile")]
     public async Task<IActionResult> CreateOrUpdateProfile([FromBody] UserEcoProfileDto profileDto)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        
-        var existing = await _context.UserEcoProfiles
-            .FirstOrDefaultAsync(p => p.UserId == userId);
-        
-        if (existing == null)
-        {
-            var profile = new UserEcoProfile
-            {
-                UserId = userId,
-                HouseholdSize = profileDto.HouseholdSize,
-                AgeGroup = profileDto.AgeGroup,
-                LifestyleType = profileDto.LifestyleType,
-                LocationType = profileDto.LocationType,
-                VehicleType = profileDto.VehicleType,
-                CarFuelType = profileDto.CarFuelType,
-                DietType = profileDto.DietType,
-                UsesSolarPanels = profileDto.UsesSolarPanels,
-                SmartThermostat = profileDto.SmartThermostat,
-                RenewableEnergyPercent = profileDto.RenewableEnergyPercent,
-                RecyclingPracticed = profileDto.RecyclingPracticed,
-                CompostingPracticed = profileDto.CompostingPracticed,
-                WasteBagSize = profileDto.WasteBagSize,
-                SocialActivity = profileDto.SocialActivity
-            };
-            
-            _context.UserEcoProfiles.Add(profile);
-        }
-        else
-        {
-            existing.HouseholdSize = profileDto.HouseholdSize;
-            existing.AgeGroup = profileDto.AgeGroup;
-            existing.LifestyleType = profileDto.LifestyleType;
-            existing.LocationType = profileDto.LocationType;
-            existing.VehicleType = profileDto.VehicleType;
-            existing.CarFuelType = profileDto.CarFuelType;
-            existing.DietType = profileDto.DietType;
-            existing.UsesSolarPanels = profileDto.UsesSolarPanels;
-            existing.SmartThermostat = profileDto.SmartThermostat;
-            existing.RenewableEnergyPercent = profileDto.RenewableEnergyPercent;
-            existing.RecyclingPracticed = profileDto.RecyclingPracticed;
-            existing.CompostingPracticed = profileDto.CompostingPracticed;
-            existing.WasteBagSize = profileDto.WasteBagSize;
-            existing.SocialActivity = profileDto.SocialActivity;
-            existing.UpdatedAt = DateTime.UtcNow;
-        }
-        
-        await _context.SaveChangesAsync();
-        
+        await _predictionService.CreateOrUpdateProfileAsync(userId, profileDto);
         return Ok(new { message = "Profile updated successfully" });
     }
-    
+
     [HttpGet("daily-logs")]
     public async Task<IActionResult> GetDailyLogs([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        
-        var query = _context.DailyLogs.Where(dl => dl.UserId == userId);
-        
-        if (startDate.HasValue)
-            query = query.Where(dl => dl.Date >= startDate.Value);
-        if (endDate.HasValue)
-            query = query.Where(dl => dl.Date <= endDate.Value);
-        
-        var logs = await query.OrderByDescending(dl => dl.Date).ToListAsync();
-        
+        var logs = await _predictionService.GetDailyLogsAsync(userId, startDate, endDate);
         return Ok(logs);
     }
+
+    // Prediction stub endpoints - feature coming soon
+
+    [HttpPost("predict")]
+    public IActionResult Predict([FromBody] object data)
+        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+
+    [HttpPost("predict/quick")]
+    public IActionResult QuickPredict([FromBody] object data)
+        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+
+    [HttpGet("history")]
+    public IActionResult GetPredictionHistory()
+        => Ok(new { message = "Feature coming soon", status = "not_implemented", data = new List<object>() });
+
+    [HttpPost("trips")]
+    public IActionResult PredictTrips([FromBody] object data)
+        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+
+    [HttpGet("trips")]
+    public IActionResult GetTripPredictions()
+        => Ok(new { message = "Feature coming soon", status = "not_implemented", data = new List<object>() });
+
+    [HttpPost("daily")]
+    public IActionResult PredictDaily([FromBody] object data)
+        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+
+    [HttpGet("daily")]
+    public IActionResult GetDailyPredictions()
+        => Ok(new { message = "Feature coming soon", status = "not_implemented", data = new List<object>() });
+
+    [HttpGet("weekly")]
+    public IActionResult GetWeeklyPredictions()
+        => Ok(new { message = "Feature coming soon", status = "not_implemented", data = new List<object>() });
+
+    [HttpPost("weekly")]
+    public IActionResult PredictWeekly([FromBody] object data)
+        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+
+    [HttpGet("model-info")]
+    public IActionResult GetModelInfo()
+        => Ok(new {
+            message = "Feature coming soon",
+            status = "not_implemented",
+            model = new { name = "Eco Prediction Model", version = "1.0.0", status = "in_development" }
+        });
+
+    [HttpGet("dashboard")]
+    public IActionResult GetPredictionDashboard()
+        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+
+    [HttpPut("profile")]
+    public IActionResult UpdateProfile([FromBody] object data)
+        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
 }

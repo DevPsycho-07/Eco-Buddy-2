@@ -1,7 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'auth_service.dart';
-import '../utils/logger.dart';
 import '../core/config/api_config.dart';
 
 /// Custom HTTP client that handles token refresh on 401 responses
@@ -14,10 +13,9 @@ class ApiClient {
     Uri url, {
     Map<String, String>? headers,
     int retryCount = 0,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     try {
-      Logger.debug('🌐 [ApiClient] GET: $url');
-      
       // Get the current valid token (with automatic refresh if needed)
       final token = await AuthService.getToken();
       if (token == null) {
@@ -31,18 +29,15 @@ class ApiClient {
       };
 
       final response = await http.get(url, headers: requestHeaders)
-          .timeout(const Duration(seconds: 15));
-
-      Logger.debug('📊 [ApiClient] GET response: ${response.statusCode}');
+          .timeout(timeout);
 
       // If token expired during request, refresh and retry
       if (response.statusCode == 401 && retryCount < maxRetries) {
-        Logger.debug('🔄 [ApiClient] Got 401, attempting token refresh and retry...');
         
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
           // Retry the request with new token
-          return get(url, headers: headers, retryCount: retryCount + 1);
+          return get(url, headers: headers, retryCount: retryCount + 1, timeout: timeout);
         } else {
           throw Exception('Session expired. Please log in again.');
         }
@@ -50,7 +45,6 @@ class ApiClient {
 
       return response;
     } catch (e) {
-      Logger.error('❌ [ApiClient] GET error: $e');
       rethrow;
     }
   }
@@ -63,8 +57,6 @@ class ApiClient {
     int retryCount = 0,
   }) async {
     try {
-      Logger.debug('🌐 [ApiClient] POST: $url');
-      
       final token = await AuthService.getToken();
       if (token == null) {
         throw Exception('No authentication token available');
@@ -82,11 +74,8 @@ class ApiClient {
         body: body is String ? body : jsonEncode(body),
       ).timeout(const Duration(seconds: 15));
 
-      Logger.debug('📊 [ApiClient] POST response: ${response.statusCode}');
-
       // If token expired during request, refresh and retry
       if (response.statusCode == 401 && retryCount < maxRetries) {
-        Logger.debug('🔄 [ApiClient] Got 401, attempting token refresh and retry...');
         
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
@@ -99,7 +88,6 @@ class ApiClient {
 
       return response;
     } catch (e) {
-      Logger.error('❌ [ApiClient] POST error: $e');
       rethrow;
     }
   }
@@ -112,8 +100,6 @@ class ApiClient {
     int retryCount = 0,
   }) async {
     try {
-      Logger.debug('🌐 [ApiClient] PUT: $url');
-      
       final token = await AuthService.getToken();
       if (token == null) {
         throw Exception('No authentication token available');
@@ -131,11 +117,8 @@ class ApiClient {
         body: body is String ? body : jsonEncode(body),
       ).timeout(const Duration(seconds: 15));
 
-      Logger.debug('📊 [ApiClient] PUT response: ${response.statusCode}');
-
       // If token expired during request, refresh and retry
       if (response.statusCode == 401 && retryCount < maxRetries) {
-        Logger.debug('🔄 [ApiClient] Got 401, attempting token refresh and retry...');
         
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
@@ -148,7 +131,6 @@ class ApiClient {
 
       return response;
     } catch (e) {
-      Logger.error('❌ [ApiClient] PUT error: $e');
       rethrow;
     }
   }
@@ -161,8 +143,6 @@ class ApiClient {
     int retryCount = 0,
   }) async {
     try {
-      Logger.debug('🌐 [ApiClient] PATCH: $url');
-      
       final token = await AuthService.getToken();
       if (token == null) {
         throw Exception('No authentication token available');
@@ -180,11 +160,8 @@ class ApiClient {
         body: body is String ? body : jsonEncode(body),
       ).timeout(const Duration(seconds: 15));
 
-      Logger.debug('📊 [ApiClient] PATCH response: ${response.statusCode}');
-
       // If token expired during request, refresh and retry
       if (response.statusCode == 401 && retryCount < maxRetries) {
-        Logger.debug('🔄 [ApiClient] Got 401, attempting token refresh and retry...');
         
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
@@ -197,7 +174,6 @@ class ApiClient {
 
       return response;
     } catch (e) {
-      Logger.error('❌ [ApiClient] PATCH error: $e');
       rethrow;
     }
   }
@@ -210,8 +186,6 @@ class ApiClient {
     int retryCount = 0,
   }) async {
     try {
-      Logger.debug('🌐 [ApiClient] DELETE: $url');
-      
       final token = await AuthService.getToken();
       if (token == null) {
         throw Exception('No authentication token available');
@@ -229,11 +203,8 @@ class ApiClient {
         body: body is String ? body : jsonEncode(body),
       ).timeout(const Duration(seconds: 15));
 
-      Logger.debug('📊 [ApiClient] DELETE response: ${response.statusCode}');
-
       // If token expired during request, refresh and retry
       if (response.statusCode == 401 && retryCount < maxRetries) {
-        Logger.debug('🔄 [ApiClient] Got 401, attempting token refresh and retry...');
         
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
@@ -246,7 +217,6 @@ class ApiClient {
 
       return response;
     } catch (e) {
-      Logger.error('❌ [ApiClient] DELETE error: $e');
       rethrow;
     }
   }

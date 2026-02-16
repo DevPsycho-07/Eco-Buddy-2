@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
-import '../../core/navigation/app_shell.dart';
 import '../../services/guest_service.dart';
 import '../../services/auth_service.dart';
-import '../../utils/logger.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
@@ -24,32 +23,20 @@ class _WelcomePageState extends State<WelcomePage> {
 
   Future<void> _checkLoginStatus() async {
     try {
-      Logger.debug('🔐 [WelcomePage] Checking login status...');
       final isLoggedIn = await AuthService.isLoggedIn();
       final isGuest = await GuestService.isGuestSession();
       
-      Logger.debug('🔐 [WelcomePage] isLoggedIn: $isLoggedIn, isGuest: $isGuest');
-      
       if (mounted) {
         if (isLoggedIn || isGuest) {
-          Logger.debug('✅ [WelcomePage] User authenticated, navigating to app...');
-          // Navigate to app shell without animation for seamless experience
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const AppShell(),
-              transitionDuration: Duration.zero,
-            ),
-          );
+          // Navigate to app shell using go_router
+          context.go('/home');
         } else {
-          Logger.debug('ℹ️ [WelcomePage] No active session, showing welcome screen');
           setState(() {
             _isCheckingAuth = false;
           });
         }
       }
     } catch (e) {
-      Logger.error('❌ [WelcomePage] Error checking login status: $e');
       if (mounted) {
         setState(() {
           _isCheckingAuth = false;
@@ -99,12 +86,9 @@ class _WelcomePageState extends State<WelcomePage> {
           ),
         );
         
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const AppShell(),
-          ),
-        );
+        if (context.mounted) {
+          context.go('/home');
+        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -165,7 +149,7 @@ class _WelcomePageState extends State<WelcomePage> {
                   child: Container(
                     width: size.width * 0.6,
                     height: size.width * 0.6,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       // color: const Color(0xFF43A047).withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../core/config/api_config.dart';
-import '../utils/logger.dart';
 import 'http_client.dart';
+import 'auth_service.dart';
 
 /// Model for activity category
 class ActivityCategory {
@@ -23,7 +23,7 @@ class ActivityCategory {
   });
 
   factory ActivityCategory.fromJson(Map<String, dynamic> json) {
-    final typesJson = json['activity_types'] as List<dynamic>? ?? [];
+    final typesJson = json['activityTypes'] as List<dynamic>? ?? [];
     return ActivityCategory(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -64,12 +64,12 @@ class ActivityType {
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       icon: json['icon'] ?? '',
-      co2Impact: (json['co2_impact'] ?? 0).toDouble(),
-      impactUnit: json['impact_unit'] ?? 'per instance',
-      isEcoFriendly: json['is_eco_friendly'] ?? false,
+      co2Impact: (json['co2Impact'] ?? json['cO2Impact'] ?? 0).toDouble(),
+      impactUnit: json['impactUnit'] ?? 'per instance',
+      isEcoFriendly: json['isEcoFriendly'] ?? false,
       points: json['points'] ?? 0,
-      categoryId: json['category'],
-      categoryName: json['category_name'],
+      categoryId: json['categoryId'] ?? json['category'],
+      categoryName: json['categoryName'] ?? json['category']?['name'],
     );
   }
 }
@@ -113,23 +113,26 @@ class Activity {
   });
 
   factory Activity.fromJson(Map<String, dynamic> json) {
+    // .NET returns nested activityType object
+    final activityType = json['activityType'] as Map<String, dynamic>?;
+    final category = activityType?['category'] as Map<String, dynamic>?;
     return Activity(
       id: json['id'] ?? 0,
-      activityTypeId: json['activity_type'] ?? 0,
-      activityTypeName: json['activity_type_name'] ?? '',
-      categoryName: json['category_name'] ?? '',
+      activityTypeId: json['activityTypeId'] ?? json['activity_type'] ?? 0,
+      activityTypeName: activityType?['name'] ?? json['activityTypeName'] ?? '',
+      categoryName: category?['name'] ?? json['categoryName'] ?? '',
       quantity: (json['quantity'] ?? 1).toDouble(),
       unit: json['unit'] ?? '',
       notes: json['notes'] ?? '',
-      co2Impact: (json['co2_impact'] ?? 0).toDouble(),
-      pointsEarned: json['points_earned'] ?? 0,
+      co2Impact: (json['co2Impact'] ?? json['cO2Impact'] ?? 0).toDouble(),
+      pointsEarned: json['pointsEarned'] ?? 0,
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
-      locationName: json['location_name'],
-      activityDate: json['activity_date'] ?? '',
-      activityTime: json['activity_time'],
-      isAutoDetected: json['is_auto_detected'] ?? false,
-      createdAt: json['created_at'] ?? '',
+      locationName: json['locationName'],
+      activityDate: json['activityDate']?.toString().substring(0, 10) ?? '',
+      activityTime: json['activityTime'],
+      isAutoDetected: json['isAutoDetected'] ?? false,
+      createdAt: json['createdAt'] ?? '',
     );
   }
 }
@@ -156,13 +159,13 @@ class ActivitySummary {
 
   factory ActivitySummary.fromJson(Map<String, dynamic> json) {
     return ActivitySummary(
-      startDate: json['start_date']?.toString() ?? '',
-      endDate: json['end_date']?.toString() ?? '',
-      totalActivities: json['total_activities'] ?? 0,
-      totalPoints: json['total_points'] ?? 0,
-      totalCo2Saved: (json['total_co2_saved'] ?? 0).toDouble(),
-      totalCo2Emitted: (json['total_co2_emitted'] ?? 0).toDouble(),
-      byCategory: json['by_category'] ?? {},
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
+      totalActivities: json['totalActivities'] ?? 0,
+      totalPoints: json['totalPoints'] ?? 0,
+      totalCo2Saved: (json['totalCO2Saved'] ?? json['totalCo2Saved'] ?? 0).toDouble(),
+      totalCo2Emitted: (json['totalCO2Emitted'] ?? json['totalCo2Emitted'] ?? 0).toDouble(),
+      byCategory: json['byCategory'] ?? {},
     );
   }
 }
@@ -188,11 +191,11 @@ class Tip {
   factory Tip.fromJson(Map<String, dynamic> json) {
     return Tip(
       id: json['id'] ?? 0,
-      categoryId: json['category'],
-      categoryName: json['category_name'],
+      categoryId: json['categoryId'] ?? json['category'],
+      categoryName: json['categoryName'],
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      impactDescription: json['impact_description'] ?? '',
+      impactDescription: json['impactDescription'] ?? '',
     );
   }
 }
@@ -203,9 +206,7 @@ class ActivityService {
 
   /// Get all activity categories with their types
   static Future<List<ActivityCategory>> getCategories() async {
-    final url = Uri.parse('$_baseUrl/categories/');
-
-    Logger.debug('📋 [ActivityService] Fetching categories');
+    final url = Uri.parse('$_baseUrl/categories');
 
     try {
       final response = await ApiClient.get(url);
@@ -214,7 +215,6 @@ class ActivityService {
         final decoded = jsonDecode(response.body);
         // Handle both paginated and non-paginated responses
         final List<dynamic> data = decoded is List ? decoded : (decoded['results'] ?? []);
-        Logger.debug('✅ [ActivityService] Categories fetched: ${data.length}');
         return data.map((c) => ActivityCategory.fromJson(c)).toList();
       } else if (response.statusCode == 401) {
         throw ActivityException(
@@ -227,26 +227,22 @@ class ActivityService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [ActivityService] Network error: $e');
+    } on http.ClientException {
       throw ActivityException(
         'Network error. Please check your internet connection and ensure the server is running.',
       );
     } catch (e) {
       if (e is ActivityException) rethrow;
-      Logger.error('❌ [ActivityService] Error: $e');
       throw ActivityException('Failed to load categories: ${e.toString()}');
     }
   }
 
   /// Get activity types, optionally filtered by category
   static Future<List<ActivityType>> getActivityTypes({int? categoryId}) async {
-    var url = Uri.parse('$_baseUrl/types/');
+    var url = Uri.parse('$_baseUrl/types');
     if (categoryId != null) {
-      url = Uri.parse('$_baseUrl/types/?category=$categoryId');
+      url = Uri.parse('$_baseUrl/types?category=$categoryId');
     }
-
-    Logger.debug('📋 [ActivityService] Fetching activity types');
 
     try {
       final response = await ApiClient.get(url);
@@ -267,14 +263,12 @@ class ActivityService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [ActivityService] Network error: $e');
+    } on http.ClientException {
       throw ActivityException(
         'Network error. Please check your internet connection.',
       );
     } catch (e) {
       if (e is ActivityException) rethrow;
-      Logger.error('❌ [ActivityService] Error: $e');
       throw ActivityException('Failed to load activity types: ${e.toString()}');
     }
   }
@@ -292,16 +286,13 @@ class ActivityService {
     String? activityTime,
     bool isAutoDetected = false,
   }) async {
-    final url = Uri.parse('$_baseUrl/log/');
-
-    Logger.debug('📝 [ActivityService] Logging activity');
+    final url = Uri.parse(_baseUrl);
 
     try {
       final body = {
-        'activity_type': activityTypeId,
+        'activityTypeId': activityTypeId,
         'quantity': quantity,
-        'activity_date': activityDate,
-        'is_auto_detected': isAutoDetected,
+        'activityDate': activityDate,
       };
 
       if (unit != null && unit.isNotEmpty) body['unit'] = unit;
@@ -309,17 +300,16 @@ class ActivityService {
       if (latitude != null) body['latitude'] = latitude;
       if (longitude != null) body['longitude'] = longitude;
       if (locationName != null && locationName.isNotEmpty) {
-        body['location_name'] = locationName;
+        body['locationName'] = locationName;
       }
       if (activityTime != null && activityTime.isNotEmpty) {
-        body['activity_time'] = activityTime;
+        body['activityTime'] = activityTime;
       }
 
       final response = await ApiClient.post(url, body: jsonEncode(body));
 
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        Logger.debug('✅ [ActivityService] Activity logged successfully');
         return Activity.fromJson(data);
       } else if (response.statusCode == 401) {
         throw ActivityException(
@@ -339,23 +329,19 @@ class ActivityService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [ActivityService] Network error: $e');
+    } on http.ClientException {
       throw ActivityException(
         'Network error. Please check your internet connection.',
       );
     } catch (e) {
       if (e is ActivityException) rethrow;
-      Logger.error('❌ [ActivityService] Error: $e');
       throw ActivityException('Failed to log activity: ${e.toString()}');
     }
   }
 
   /// Get today's activities
   static Future<List<Activity>> getTodayActivities() async {
-    final url = Uri.parse('$_baseUrl/log/today/');
-
-    Logger.debug('📋 [ActivityService] Fetching today\'s activities');
+    final url = Uri.parse('$_baseUrl/log/today');
 
     try {
       final response = await ApiClient.get(url);
@@ -374,23 +360,19 @@ class ActivityService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [ActivityService] Network error: $e');
+    } on http.ClientException {
       throw ActivityException(
         'Network error. Please check your internet connection.',
       );
     } catch (e) {
       if (e is ActivityException) rethrow;
-      Logger.error('❌ [ActivityService] Error: $e');
       throw ActivityException('Failed to load activities: ${e.toString()}');
     }
   }
 
   /// Get activity summary for a date range
   static Future<ActivitySummary> getSummary({int days = 7}) async {
-    final url = Uri.parse('$_baseUrl/log/summary/?days=$days');
-
-    Logger.debug('📊 [ActivityService] Fetching summary for $days days');
+    final url = Uri.parse('$_baseUrl/log/summary?days=$days');
 
     try {
       final response = await ApiClient.get(url);
@@ -409,23 +391,19 @@ class ActivityService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [ActivityService] Network error: $e');
+    } on http.ClientException {
       throw ActivityException(
         'Network error. Please check your internet connection.',
       );
     } catch (e) {
       if (e is ActivityException) rethrow;
-      Logger.error('❌ [ActivityService] Error: $e');
       throw ActivityException('Failed to load summary: ${e.toString()}');
     }
   }
 
   /// Get activity history grouped by date
   static Future<Map<String, List<Activity>>> getHistory({int days = 30}) async {
-    final url = Uri.parse('$_baseUrl/log/history/?days=$days');
-
-    Logger.debug('📋 [ActivityService] Fetching activity history');
+    final url = Uri.parse('$_baseUrl/log/history?days=$days');
 
     try {
       final response = await ApiClient.get(url);
@@ -451,23 +429,19 @@ class ActivityService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [ActivityService] Network error: $e');
+    } on http.ClientException {
       throw ActivityException(
         'Network error. Please check your internet connection.',
       );
     } catch (e) {
       if (e is ActivityException) rethrow;
-      Logger.error('❌ [ActivityService] Error: $e');
       throw ActivityException('Failed to load history: ${e.toString()}');
     }
   }
 
   /// Get daily tip
   static Future<Tip?> getDailyTip() async {
-    final url = Uri.parse('$_baseUrl/tips/daily/');
-
-    Logger.debug('💡 [ActivityService] Fetching daily tip');
+    final url = Uri.parse('$_baseUrl/tips/daily');
 
     try {
       final response = await ApiClient.get(url);
@@ -486,22 +460,18 @@ class ActivityService {
         return null;
       }
     } catch (e) {
-      Logger.error('❌ [ActivityService] Error fetching tip: $e');
       return null;
     }
   }
 
   /// Delete an activity
   static Future<void> deleteActivity(int activityId) async {
-    final url = Uri.parse('$_baseUrl/log/$activityId/');
-
-    Logger.debug('🗑️ [ActivityService] Deleting activity $activityId');
+    final url = Uri.parse('$_baseUrl/$activityId');
 
     try {
       final response = await ApiClient.delete(url);
 
       if (response.statusCode == 204 || response.statusCode == 200) {
-        Logger.debug('✅ [ActivityService] Activity deleted');
         return;
       } else if (response.statusCode == 401) {
         throw ActivityException(
@@ -519,15 +489,44 @@ class ActivityService {
           statusCode: response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
-      Logger.error('❌ [ActivityService] Network error: $e');
+    } on http.ClientException {
       throw ActivityException(
         'Network error. Please check your internet connection.',
       );
     } catch (e) {
       if (e is ActivityException) rethrow;
-      Logger.error('❌ [ActivityService] Error: $e');
       throw ActivityException('Failed to delete activity: ${e.toString()}');
+    }
+  }
+
+  /// Search activities by query
+  static Future<List<Map<String, dynamic>>> searchActivities(String query) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw ActivityException('Not authenticated');
+      }
+
+      final response = await ApiClient.get(
+        Uri.parse('${ApiConfig.baseUrl}/activities?search=$query'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((item) => item as Map<String, dynamic>).toList();
+      } else {
+        throw ActivityException(
+          'Failed to search activities',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is ActivityException) rethrow;
+      throw ActivityException('Search failed: ${e.toString()}');
     }
   }
 }

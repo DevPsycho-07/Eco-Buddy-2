@@ -41,3 +41,8 @@ public class UserChallengeDto
     public DateTime JoinedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
 }
+
+public class UpdateUserChallengeDto
+{
+    public double CurrentProgress { get; set; }
+}

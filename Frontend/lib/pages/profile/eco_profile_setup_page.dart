@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/eco_profile_service.dart';
-import '../../core/navigation/app_shell.dart';
-import '../../utils/logger.dart';
 
 class EcoProfileSetupPage extends StatefulWidget {
   final bool isFirstTime;
@@ -141,10 +140,7 @@ class _EcoProfileSetupPageState extends State<EcoProfileSetupPage> {
         );
 
         if (widget.isFirstTime) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AppShell()),
-          );
+          context.go('/home');
         } else {
           Navigator.pop(context, true);
         }
@@ -157,7 +153,6 @@ class _EcoProfileSetupPageState extends State<EcoProfileSetupPage> {
         );
       }
     } catch (e) {
-      Logger.error('❌ [EcoProfileSetup] Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -596,6 +591,7 @@ class _EcoProfileSetupPageState extends State<EcoProfileSetupPage> {
     required String selectedValue,
     required Function(String) onSelected,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -606,8 +602,9 @@ class _EcoProfileSetupPageState extends State<EcoProfileSetupPage> {
           selected: isSelected,
           onSelected: (_) => onSelected(option['value']!),
           selectedColor: Colors.green,
+          backgroundColor: isDarkMode ? Colors.grey[800] : null,
           labelStyle: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87,
+            color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black87),
           ),
         );
       }).toList(),

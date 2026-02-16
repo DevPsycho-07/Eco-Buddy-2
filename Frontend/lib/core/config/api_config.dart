@@ -1,12 +1,13 @@
 import 'dart:io';
 
-/// Centralized API configuration for ASP.NET Core Backend
+/// Centralized API configuration
 /// Change the base URL here to update it across the entire app
 class ApiConfig {
-  // ASP.NET Core backend URL using dev tunnel for remote access
-  static const String _dotnetTunnelUrl = 'https://hc09rz96-5000.inc1.devtunnels.ms';
+  // Use dev tunnel URL for remote access
+  // static const String _devTunnelUrl = 'https://hc09rz96-8000.inc1.devtunnels.ms';
+  static const String _devTunnelUrl = 'https://k0xvg8xq-5000.inc1.devtunnels.ms';
   
-  // Fallback local IP (for physical devices on same network)
+  // Fallback local IP (used when dev tunnel is not available)
   static const String _fallbackIp = '192.168.1.10';
   static const String _port = '5000';
   
@@ -41,9 +42,9 @@ class ApiConfig {
     return 'http://$ip:$_port/api';
   }
   
-  // Static base URL for synchronous access (uses dev tunnel for .NET backend)
+  // Static base URL for synchronous access (uses dev tunnel URL)
   // Use getBaseUrl() for auto-detection
-  static const String baseUrl = '$_dotnetTunnelUrl/api';
+  static const String baseUrl = '$_devTunnelUrl/api';
   
   // Individual endpoint bases (if needed)
   static const String usersUrl = '$baseUrl/users';

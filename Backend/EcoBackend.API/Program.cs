@@ -180,23 +180,11 @@ app.MapGet("/api", () => new
     }
 });
 
-// Initialize database and seed data
+// Ensure database exists
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<EcoDbContext>();
     context.Database.EnsureCreated();
-    await DbInitializer.SeedAsync(context);
-    
-    // Set default profile picture for any existing users that have null
-    var usersWithoutPicture = context.Users
-        .Where(u => u.ProfilePicture == null || u.ProfilePicture == "")
-        .ToList();
-    foreach (var u in usersWithoutPicture)
-    {
-        u.ProfilePicture = EcoBackend.Core.Entities.User.DefaultProfilePicture;
-    }
-    if (usersWithoutPicture.Count > 0)
-        await context.SaveChangesAsync();
 }
 
 // Configure recurring background jobs

@@ -155,8 +155,7 @@ Backend/
 │
 ├── EcoBackend.Infrastructure/               # Data Access Layer
 │   ├── Data/
-│   │   ├── EcoDbContext.cs                  # DbContext (19 DbSets)
-│   │   └── DataSeeder.cs                    # Seed data
+│   │   └── EcoDbContext.cs                  # DbContext (19 DbSets)
 │   │
 │   └── Migrations/                          # EF Core migrations
 │       └── *.cs                             # Migration files
@@ -678,24 +677,12 @@ dotnet ef migrations script --startup-project ../EcoBackend.API -o migration.sql
 
 ### Seeding Data
 
-Data seeder runs automatically on startup (development only).
+All data has been pre-seeded and is ready in the database. No automatic seeding occurs on startup.
 
-Location: `EcoBackend.Infrastructure/Data/DataSeeder.cs`
-
-**Add new seed data:**
-```csharp
-public static async Task SeedAsync(EcoDbContext context)
-{
-    if (!context.YourEntity.Any())
-    {
-        context.YourEntity.AddRange(
-            new YourEntity { ... },
-            new YourEntity { ... }
-        );
-        await context.SaveChangesAsync();
-    }
-}
-```
+If you need to reset the database and start fresh, you can:
+1. Delete the `eco.db` file
+2. Run migrations: `dotnet ef database update --startup-project ../EcoBackend.API`
+3. Manually seed data through the API endpoints or by directly inserting data into the database
 
 ### Database Inspection
 
@@ -795,7 +782,7 @@ rm eco.db
 cd EcoBackend.Infrastructure
 dotnet ef database update --startup-project ../EcoBackend.API
 
-# Restart application (will reseed data)
+# The database will be created empty (no automatic seeding occurs)
 cd ../EcoBackend.API
 dotnet run
 ```
@@ -841,21 +828,11 @@ https://localhost:7162/swagger/v1/swagger.json
 
 ### Generate Test Users
 
-Test users are seeded automatically:
-- Username: `admin`, Password: `admin123`
-- Username: `admin2`, Password: `admin123`
+Previously, test users were automatically seeded on startup. Now that all data is already pre-seeded, you can login with any of the existing user accounts in the database, or create new users through the API.
 
-**Add custom test users:**
-```csharp
-// In DataSeeder.cs
-var user = new User
-{
-    UserName = "testuser",
-    Email = "test@example.com",
-    EmailConfirmed = true
-};
-await userManager.CreateAsync(user, "Test123!");
-```
+**To create a new user:**
+- Use the registration endpoint: `POST /api/users/register`
+- Create users with standard credentials through the sign-up flow
 
 ---
 

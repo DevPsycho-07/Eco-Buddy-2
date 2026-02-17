@@ -266,18 +266,6 @@ dotnet test
 
 ---
 
-## 📱 Default Users
-
-The application comes with pre-seeded admin users:
-
-```
-Username: admin
-Password: admin123
-
-Username: admin2
-Password: admin123
-```
-
 ## 🔒 Security Features
 
 - **JWT Authentication** - Token-based authentication with 24-hour validity

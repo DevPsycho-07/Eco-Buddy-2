@@ -10,7 +10,7 @@ class EmailService {
   static Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/users/forgot-password'),
+        Uri.parse('$baseUrl/users/forgot-password/'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -54,15 +54,15 @@ class EmailService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/users/reset-password'),
+        Uri.parse('$baseUrl/users/reset-password/'),
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'email': email,
           'token': token,
-          'newPassword': newPassword,
-          'newPasswordConfirm': newPasswordConfirm,
+          'new_password': newPassword,
+          'new_password_confirm': newPasswordConfirm,
         }),
       ).timeout(const Duration(seconds: 10));
 
@@ -99,7 +99,7 @@ class EmailService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/users/verify-email'),
+        Uri.parse('$baseUrl/users/verify-email/'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -139,7 +139,7 @@ class EmailService {
   static Future<Map<String, dynamic>> resendVerificationEmail(String email) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/users/resend-verification-email'),
+        Uri.parse('$baseUrl/users/resend-verification-email/'),
         headers: {
           'Content-Type': 'application/json',
         },

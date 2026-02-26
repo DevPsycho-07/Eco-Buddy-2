@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'dart:ui' as ui;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/analytics_service.dart';
 import '../../services/guest_service.dart';
+import '../../services/eco_profile_service.dart';
+import '../../core/providers/units_provider.dart';
+import '../../core/utils/unit_converter.dart';
 
-class AnalyticsPage extends StatefulWidget {
+class AnalyticsPage extends ConsumerStatefulWidget {
   const AnalyticsPage({super.key});
 
   @override
-  State<AnalyticsPage> createState() => _AnalyticsPageState();
+  ConsumerState<AnalyticsPage> createState() => _AnalyticsPageState();
 }
 
-class _AnalyticsPageState extends State<AnalyticsPage> {
+class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
   String _selectedPeriod = 'Week';
   int _selectedChartType = 0; // 0 = bar, 1 = line
 
@@ -21,6 +23,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   String? _statsError;
   String? _comparisonError;
   bool _isGuestMode = false;
+  Map<String, dynamic>? _predictionData;
+  bool _isPredictionLoading = false;
 
   // Data from backend
   AnalyticsStats? _analyticsStats;
@@ -79,6 +83,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     await Future.wait([
       _loadStats(),
       _loadComparison(),
+      _loadPrediction(),
     ]);
   }
 
@@ -151,52 +156,26 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     }
   }
 
+  Future<void> _loadPrediction() async {
+    if (_isGuestMode) return;
+    if (mounted) setState(() => _isPredictionLoading = true);
+    try {
+      final prediction = await EcoProfileService.getPrediction();
+      if (mounted) {
+        setState(() {
+          _predictionData = prediction;
+          _isPredictionLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isPredictionLoading = false);
+    }
+  }
+
   void _onPeriodChanged(String period) {
     if (_selectedPeriod != period) {
       setState(() => _selectedPeriod = period);
       _loadStats();
-    }
-  }
-
-  String _formatDateRange(String startDateStr, String endDateStr) {
-    try {
-      // Parse ISO 8601 dates
-      final startDate = DateTime.parse(startDateStr);
-      final endDate = DateTime.parse(endDateStr);
-      
-      // Format based on whether dates are in the same month/year
-      final now = DateTime.now();
-      final dateFormat = DateFormat('MMM d');
-      final yearFormat = DateFormat('MMM d, yyyy');
-      
-      // If viewing daily data, show only one date
-      if (_selectedPeriod == 'Day') {
-        return startDate.year == now.year 
-            ? dateFormat.format(startDate)
-            : yearFormat.format(startDate);
-      }
-      
-      // If both dates are in the current year, don't show year
-      if (startDate.year == now.year && endDate.year == now.year) {
-        // If same date, show just one date
-        if (startDate.year == endDate.year && 
-            startDate.month == endDate.month && 
-            startDate.day == endDate.day) {
-          return dateFormat.format(startDate);
-        }
-        // If same month, show "MMM d-d"
-        if (startDate.year == endDate.year && startDate.month == endDate.month) {
-          return '${DateFormat('MMM').format(startDate)} ${startDate.day}-${endDate.day}';
-        }
-        // Different months, same year
-        return '${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}';
-      }
-      
-      // Different years or not current year, include year
-      return '${yearFormat.format(startDate)} - ${yearFormat.format(endDate)}';
-    } catch (e) {
-      // If parsing fails, return the original strings truncated
-      return '$startDateStr - $endDateStr'.substring(0, 30);
     }
   }
 
@@ -252,8 +231,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               child: Row(
                 children: ['Day', 'Week', 'Month', 'Year'].map((period) {
                   final isSelected = _selectedPeriod == period;
-                  final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-                  
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
@@ -261,9 +238,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       selected: isSelected,
                       selectedColor: Colors.green,
                       labelStyle: TextStyle(
-                        color: isSelected 
-                            ? Colors.white // Selected: always white on green background
-                            : (isDarkMode ? Colors.white : Colors.black), // Unselected: follow theme
+                        color: isSelected ? Colors.white : Colors.white,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                       onSelected: (selected) {
@@ -307,9 +282,174 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               const SizedBox(height: 12),
               ..._buildInsights(),
             ],
+
+            const SizedBox(height: 20),
+
+            // ML Prediction Section
+            if (!_isGuestMode) _buildMlPredictionSection(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMlPredictionSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (_isPredictionLoading) {
+      return _buildLoadingCard('Loading ML prediction...');
+    }
+
+    if (_predictionData == null) {
+      return Card(
+        elevation: 0,
+        color: isDark ? const Color(0xFF252525) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(Icons.model_training, size: 40, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              Text(
+                'Set up your eco profile to get ML predictions',
+                style: TextStyle(color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final predictedScore =
+        (_predictionData!['predicted_score'] as num).toDouble();
+    final scoreCategory =
+        _predictionData!['score_category'] as String? ?? 'N/A';
+    final recommendations =
+        (_predictionData!['recommendations'] as List<dynamic>?)
+            ?.cast<String>() ??
+            [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'ML Predicted Eco Score',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [Colors.blue[600]!, Colors.indigo[700]!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 90,
+                      height: 90,
+                      child: CircularProgressIndicator(
+                        value: predictedScore / 100,
+                        strokeWidth: 9,
+                        backgroundColor: Colors.white.withValues(alpha: 0.3),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            Colors.white),
+                      ),
+                    ),
+                    Column(
+                      children: [
+                        Text(
+                          predictedScore.toStringAsFixed(0),
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const Text('/100',
+                            style:
+                                TextStyle(fontSize: 10, color: Colors.white70)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Random Forest Prediction',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          scoreCategory,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '🤖 Trained on eco behaviour data',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (recommendations.isNotEmpty) ...
+          [
+            const SizedBox(height: 12),
+            Text(
+              'AI Recommendations',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...recommendations.map(
+              (rec) => _buildInsightCard(
+                Icons.tips_and_updates,
+                rec.length > 60 ? '${rec.substring(0, 60)}…' : rec,
+                rec.length > 60 ? rec : '',
+                Colors.blue,
+              ),
+            ),
+          ],
+      ],
     );
   }
 
@@ -390,7 +530,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    stats.netImpact.abs().toStringAsFixed(1),
+                    UnitConverter.formatWeight(stats.netImpact.abs(), isMetric: ref.watch(unitsProvider) == 'metric', decimals: 1).split(' ')[0],
                     style: const TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
@@ -400,7 +540,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10, left: 4),
                     child: Text(
-                      'kg CO₂ ${stats.netImpact < 0 ? 'saved' : 'emitted'}',
+                      '${UnitConverter.getWeightUnit(ref.watch(unitsProvider) == 'metric')} CO₂ ${stats.netImpact < 0 ? 'saved' : 'emitted'}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 16,
@@ -417,13 +557,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     '${stats.totalActivities} activities',
                     style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
                   ),
-                  Flexible(
-                    child: Text(
-                      _formatDateRange(stats.startDate, stats.endDate),
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
-                      textAlign: TextAlign.right,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  Text(
+                    '${stats.startDate} - ${stats.endDate}',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
                   ),
                 ],
               ),
@@ -439,7 +575,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           Expanded(
             child: _buildStatCard(
               'CO₂ Emitted',
-              '${stats.totalCo2Emitted.toStringAsFixed(1)} kg',
+              UnitConverter.formatWeight(stats.totalCo2Emitted, isMetric: ref.watch(unitsProvider) == 'metric'),
               Icons.cloud_upload,
               Colors.red,
             ),
@@ -448,7 +584,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           Expanded(
             child: _buildStatCard(
               'CO₂ Saved',
-              '${stats.totalCo2Saved.toStringAsFixed(1)} kg',
+              UnitConverter.formatWeight(stats.totalCo2Saved, isMetric: ref.watch(unitsProvider) == 'metric'),
               Icons.eco,
               Colors.green,
             ),
@@ -525,11 +661,27 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
     // Calculate percentage difference from average
     String vsAvgText;
-    if (comparison.avgCo2Saved != 0) {
-      final diff = ((comparison.userCo2Saved - comparison.avgCo2Saved) / comparison.avgCo2Saved * 100).round();
-      vsAvgText = '${diff > 0 ? '+' : ''}$diff%';
+    String vsAvgSubtitle;
+    
+    if (comparison.avgCo2Saved < 0.1) {
+      // Average is too low for meaningful percentage
+      vsAvgText = '+${comparison.userCo2Saved.toStringAsFixed(1)} kg';
+      vsAvgSubtitle = 'CO₂ saved';
     } else {
-      vsAvgText = '0%';
+      final diffPercent = ((comparison.userCo2Saved - comparison.avgCo2Saved) / comparison.avgCo2Saved * 100);
+      
+      // Cap extreme percentages for better UX
+      if (diffPercent > 500) {
+        vsAvgText = '+${comparison.userCo2Saved.toStringAsFixed(1)} kg';
+        vsAvgSubtitle = '${(diffPercent / 100).toStringAsFixed(1)}x average';
+      } else if (diffPercent < -500) {
+        vsAvgText = '${comparison.userCo2Saved.toStringAsFixed(1)} kg';
+        vsAvgSubtitle = 'Below average';
+      } else {
+        final diff = diffPercent.round();
+        vsAvgText = '${diff > 0 ? '+' : ''}$diff%';
+        vsAvgSubtitle = comparison.co2Diff >= 0 ? 'Above avg user' : 'Below avg user';
+      }
     }
 
     return Row(
@@ -540,7 +692,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             vsAvgText,
             Icons.people,
             comparison.co2Diff >= 0 ? Colors.green : Colors.orange,
-            comparison.co2Diff >= 0 ? 'Above avg user' : 'Below avg user',
+            vsAvgSubtitle,
           ),
         ),
         const SizedBox(width: 12),
@@ -572,7 +724,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       insights.add(_buildInsightCard(
         _getCategoryIcon(highestCategory.name),
         '${highestCategory.name} is your highest emission source',
-        'It accounts for ${highestCategory.percentage.toStringAsFixed(0)}% of your carbon footprint (${highestCategory.co2Impact.abs().toStringAsFixed(1)} kg CO₂)',
+        'It accounts for ${highestCategory.percentage.toStringAsFixed(0)}% of your carbon footprint (${UnitConverter.formatWeight(highestCategory.co2Impact.abs(), isMetric: ref.watch(unitsProvider) == 'metric')} CO₂)',
         Colors.orange,
       ));
     }
@@ -582,7 +734,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       insights.add(_buildInsightCard(
         Icons.eco,
         'Great job saving CO₂!',
-        'You\'ve saved ${stats.totalCo2Saved.toStringAsFixed(1)} kg CO₂ this $_selectedPeriod',
+        'You\'ve saved ${UnitConverter.formatWeight(stats.totalCo2Saved, isMetric: ref.watch(unitsProvider) == 'metric')} CO₂ this $_selectedPeriod',
         Colors.green,
       ));
     }
@@ -841,7 +993,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 category.name,
                 category.percentage.round(),
                 color,
-                '${category.co2Impact.abs().toStringAsFixed(1)} kg',
+                UnitConverter.formatWeight(category.co2Impact.abs(), isMetric: ref.watch(unitsProvider) == 'metric'),
               );
             }),
           ],
@@ -1083,7 +1235,7 @@ class _LineChartPainter extends CustomPainter {
 
     // Draw labels
     final textPainter = TextPainter(
-      textDirection: ui.TextDirection.ltr,
+      textDirection: TextDirection.ltr,
     );
 
     for (var i = 0; i < labels.length && i < displayCount; i++) {

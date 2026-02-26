@@ -76,8 +76,9 @@ public class UserService
         return (new AuthResponseDto
         {
             User = MapToUserDto(user),
-            AccessToken = tokens.AccessToken,
-            RefreshToken = tokens.RefreshToken
+            Access = tokens.AccessToken,
+            Refresh = tokens.RefreshToken,
+            EmailVerified = user.EmailConfirmed
         }, null);
     }
 
@@ -101,8 +102,9 @@ public class UserService
         return new AuthResponseDto
         {
             User = MapToUserDto(user),
-            AccessToken = tokens.AccessToken,
-            RefreshToken = tokens.RefreshToken
+            Access = tokens.AccessToken,
+            Refresh = tokens.RefreshToken,
+            EmailVerified = user.EmailConfirmed
         };
     }
 
@@ -126,8 +128,9 @@ public class UserService
         return new AuthResponseDto
         {
             User = MapToUserDto(storedToken.User),
-            AccessToken = newTokens.AccessToken,
-            RefreshToken = newTokens.RefreshToken
+            Access = newTokens.AccessToken,
+            Refresh = newTokens.RefreshToken,
+            EmailVerified = storedToken.User.EmailConfirmed
         };
     }
 
@@ -648,4 +651,133 @@ public class UserService
             CreatedAt = user.CreatedAt
         };
     }
+
+    // ========== Google Sign-In ==========
+
+    /// <summary>
+    /// Verify a Google ID token and return app JWT tokens.
+    /// Mirrors Django GoogleSignInView — finds/creates user by google_auth_id then email.
+    /// Returns null if token cannot be verified.
+    /// </summary>
+    public async Task<(AuthResponseDto? Response, string? Error)> GoogleSignInAsync(string idTokenString)
+    {
+        // Validate the Google ID token using Google.Apis.Auth
+        Google.Apis.Auth.GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            var googleClientId = _configuration["Authentication:Google:ClientId"];
+            var validationSettings = string.IsNullOrEmpty(googleClientId)
+                ? null
+                : new Google.Apis.Auth.GoogleJsonWebSignature.ValidationSettings
+                  { Audience = new[] { googleClientId } };
+
+            payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(idTokenString, validationSettings);
+        }
+        catch (Exception ex)
+        {
+            return (null, $"Invalid Google token: {ex.Message}");
+        }
+
+        var googleUserId = payload.Subject;
+        var email = payload.Email ?? string.Empty;
+        var firstName = payload.GivenName ?? string.Empty;
+        var lastName = payload.FamilyName ?? string.Empty;
+        var emailVerified = payload.EmailVerified;
+
+        // Try to find user by google_auth_id, then by email
+        User? user = await _context.Users.FirstOrDefaultAsync(u => u.GoogleAuthId == googleUserId);
+
+        if (user == null)
+        {
+            user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user != null)
+            {
+                // Link Google account to existing user
+                user.GoogleAuthId = googleUserId;
+                if (!user.EmailVerified && emailVerified)
+                    user.EmailVerified = true;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        if (user == null)
+        {
+            // Create new Google-only user
+            var baseUsername = email.Split('@')[0].ToLower();
+            var username = baseUsername;
+            var counter = 1;
+            while (await _userManager.FindByNameAsync(username) != null)
+                username = $"{baseUsername}{counter++}";
+
+            user = new User
+            {
+                UserName = username,
+                Email = email,
+                NormalizedEmail = email.ToUpper(),
+                NormalizedUserName = username.ToUpper(),
+                FirstName = firstName,
+                LastName = lastName,
+                GoogleAuthId = googleUserId,
+                EmailVerified = emailVerified,
+                ProfilePicture = User.DefaultProfilePicture
+            };
+
+            var result = await _userManager.CreateAsync(user);
+            if (!result.Succeeded)
+                return (null, result.Errors.FirstOrDefault()?.Description ?? "Failed to create user.");
+        }
+
+        var tokens = await GenerateTokensAsync(user);
+        return (new AuthResponseDto
+        {
+            User = MapToUserDto(user),
+            Access = tokens.AccessToken,
+            Refresh = tokens.RefreshToken,
+            EmailVerified = user.EmailConfirmed
+        }, null);
+    }
+
+    // ========== Notification Preferences ==========
+
+    public async Task<NotificationPreferenceDto?> GetNotificationPreferencesAsync(int userId)
+    {
+        var prefs = await _context.NotificationPreferences.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (prefs == null)
+        {
+            // Auto-create defaults (mirrors Django get_or_create)
+            prefs = new NotificationPreference { UserId = userId };
+            _context.NotificationPreferences.Add(prefs);
+            await _context.SaveChangesAsync();
+        }
+        return MapToNotificationPreferenceDto(prefs);
+    }
+
+    public async Task<NotificationPreferenceDto?> UpdateNotificationPreferencesAsync(int userId, NotificationPreferenceDto dto)
+    {
+        var prefs = await _context.NotificationPreferences.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (prefs == null)
+        {
+            prefs = new NotificationPreference { UserId = userId };
+            _context.NotificationPreferences.Add(prefs);
+        }
+
+        prefs.DailyReminders = dto.DailyReminders;
+        prefs.AchievementAlerts = dto.AchievementAlerts;
+        prefs.WeeklyReports = dto.WeeklyReports;
+        prefs.TipsAndSuggestions = dto.TipsAndSuggestions;
+        prefs.CommunityUpdates = dto.CommunityUpdates;
+
+        await _context.SaveChangesAsync();
+        return MapToNotificationPreferenceDto(prefs);
+    }
+
+    private static NotificationPreferenceDto MapToNotificationPreferenceDto(NotificationPreference prefs) =>
+        new()
+        {
+            DailyReminders = prefs.DailyReminders,
+            AchievementAlerts = prefs.AchievementAlerts,
+            WeeklyReports = prefs.WeeklyReports,
+            TipsAndSuggestions = prefs.TipsAndSuggestions,
+            CommunityUpdates = prefs.CommunityUpdates
+        };
 }

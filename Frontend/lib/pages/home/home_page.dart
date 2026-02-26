@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/widgets/eco_score_card.dart';
 import '../../core/widgets/quick_stats_card.dart';
 import '../../core/widgets/daily_tip_card.dart';
 import '../../services/dashboard_service.dart';
 import '../../services/activity_service.dart';
 import '../../services/guest_service.dart';
+import '../../services/eco_profile_service.dart';
+import '../../core/providers/units_provider.dart';
+import '../../core/utils/unit_converter.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   // Loading and error states
   bool _isLoading = true;
   String? _error;
@@ -22,15 +27,18 @@ class _HomePageState extends State<HomePage> {
   // Data from backend
   UserDashboard? _userProfile;
   ActivitySummary? _activitySummary;
-  ActivitySummary? _yesterdayActivitySummary;
   List<Activity> _recentActivities = [];
   Tip? _dailyTip;
   List<Challenge> _activeChallenges = [];
+  Map<String, dynamic>? _predictionData;
+  bool _isPredictionLoading = false;
+  bool _hasLoggedToday = false;
 
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+    _loadPrediction();
   }
 
   Future<void> _loadDashboardData() async {
@@ -86,30 +94,12 @@ class _HomePageState extends State<HomePage> {
       }
 
       // Load all data in parallel for authenticated users
-      // Calculate yesterday's date for trend comparison
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayStr = yesterday.toIso8601String().split('T')[0];
-      
       final results = await Future.wait([
         DashboardService.getUserProfile(),
         ActivityService.getSummary(days: 1),
         ActivityService.getTodayActivities(),
         ActivityService.getDailyTip(),
         DashboardService.getActiveChallenges(),
-        // Fetch yesterday's summary for trend calculation
-        ActivityService.getSummary(days: 1).then((summary) async {
-          // This gets today, so we need a different approach
-          // For now, return a default summary
-          return ActivitySummary(
-            startDate: yesterdayStr,
-            endDate: yesterdayStr,
-            totalActivities: 0,
-            totalPoints: 0,
-            totalCo2Saved: 0.0,
-            totalCo2Emitted: 0.0,
-            byCategory: {},
-          );
-        }),
       ]);
 
       if (mounted) {
@@ -120,7 +110,6 @@ class _HomePageState extends State<HomePage> {
           _recentActivities = results[2] as List<Activity>;
           _dailyTip = results[3] as Tip?;
           _activeChallenges = results[4] as List<Challenge>;
-          _yesterdayActivitySummary = results[5] as ActivitySummary;
           _isLoading = false;
         });
       }
@@ -207,7 +196,9 @@ class _HomePageState extends State<HomePage> {
     final totalActivities = _activitySummary?.totalActivities ?? 0;
 
     return RefreshIndicator(
-      onRefresh: _loadDashboardData,
+      onRefresh: () async {
+        await Future.wait([_loadDashboardData(), _loadPrediction()]);
+      },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
@@ -280,7 +271,12 @@ class _HomePageState extends State<HomePage> {
             // Daily Eco Score Summary Card
             EcoScoreCard(
               score: todayPoints,
-              trend: _calculateScoreTrend(),
+              predictedScore: _predictionData != null
+                  ? (_predictionData!['predicted_score'] as num).toDouble()
+                  : null,
+              scoreCategory: _predictionData?['score_category'] as String?,
+              isPredictionLoading: _isPredictionLoading && !_isGuestMode,
+              hasLoggedToday: _hasLoggedToday,
             ),
             const SizedBox(height: 16),
 
@@ -308,7 +304,7 @@ class _HomePageState extends State<HomePage> {
                 Expanded(child: QuickStatsCard(
                   icon: Icons.co2,
                   label: 'CO₂ Saved',
-                  value: '${totalCo2Saved.toStringAsFixed(1)} kg',
+                  value: UnitConverter.formatWeight(totalCo2Saved, isMetric: ref.watch(unitsProvider) == 'metric'),
                   color: Colors.green,
                 )),
               ],
@@ -359,7 +355,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/all-activities');
+                    context.push('/all-activities');
                   },
                   child: const Text('See All'),
                 ),
@@ -401,7 +397,7 @@ class _HomePageState extends State<HomePage> {
                 context,
                 _getActivityIcon(activity.categoryName),
                 activity.activityTypeName,
-                '${activity.co2Impact >= 0 ? '+' : ''}${activity.co2Impact.toStringAsFixed(1)} kg CO₂',
+                '${activity.co2Impact >= 0 ? '+' : ''}${UnitConverter.formatWeight(activity.co2Impact.abs(), isMetric: ref.watch(unitsProvider) == 'metric')} CO₂',
                 _formatTimeAgo(activity.createdAt),
                 _getCategoryColor(activity.categoryName),
               )),
@@ -417,11 +413,35 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildQuickAction(context, Icons.add_circle, 'Log Activity', Colors.green)),
+                Expanded(
+                  child: _buildQuickAction(
+                    context,
+                    Icons.add_circle,
+                    'Log Activity',
+                    Colors.green,
+                    () => _logActivity(),
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _buildQuickAction(context, Icons.directions_car, 'Track Trip', Colors.blue)),
+                Expanded(
+                  child: _buildQuickAction(
+                    context,
+                    Icons.directions_car,
+                    'Track Trip',
+                    Colors.blue,
+                    () => _trackTrip(),
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _buildQuickAction(context, Icons.restaurant, 'Log Meal', Colors.orange)),
+                Expanded(
+                  child: _buildQuickAction(
+                    context,
+                    Icons.restaurant,
+                    'Log Meal',
+                    Colors.orange,
+                    () => _logMeal(),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -431,24 +451,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  int _calculateScoreTrend() {
-    // Calculate actual trend from today vs yesterday
-    final todayPoints = _activitySummary?.totalPoints ?? 0;
-    final yesterdayPoints = _yesterdayActivitySummary?.totalPoints ?? 0;
-    
-    // If no data for both days, return 0
-    if (todayPoints == 0 && yesterdayPoints == 0) {
-      return 0;
+  Future<void> _loadPrediction() async {
+    if (_isGuestMode) return;
+    if (mounted) setState(() => _isPredictionLoading = true);
+    try {
+      final prediction = await EcoProfileService.getPrediction();
+      if (mounted) {
+        setState(() {
+          _predictionData = prediction;
+          _isPredictionLoading = false;
+          final sources = prediction?['data_sources'];
+          _hasLoggedToday = sources?['daily_log'] == true ||
+              sources?['activities_today'] == true;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isPredictionLoading = false);
     }
-    
-    // If yesterday had no points, return today's points as 100% increase
-    if (yesterdayPoints == 0) {
-      return todayPoints > 0 ? 100 : 0;
-    }
-    
-    // Calculate percentage change
-    final change = ((todayPoints - yesterdayPoints) / yesterdayPoints * 100).round();
-    return change;
   }
 
   String _calculateTreesEquivalent(double co2Saved) {
@@ -515,7 +534,7 @@ class _HomePageState extends State<HomePage> {
             Text(
               progress >= 1.0
                   ? '🎉 Daily goal achieved! Great job!'
-                  : 'Save ${remaining.toStringAsFixed(1)} kg more CO₂ to reach your daily goal!',
+                  : 'Save ${UnitConverter.formatWeight(remaining, isMetric: ref.watch(unitsProvider) == 'metric')} more CO₂ to reach your daily goal!',
               style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600], fontSize: 13),
             ),
           ],
@@ -683,7 +702,64 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildQuickAction(BuildContext context, IconData icon, String label, Color color) {
+  void _logActivity() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Log Activity feature coming soon!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _trackTrip() {
+    // Navigate to travel insights page
+    DefaultTabController.of(context).animateTo(2);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Navigate to Travel Insights'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  void _logMeal() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Log Meal'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Choose a meal type:'),
+            SizedBox(height: 16),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: null,
+            icon: const Icon(Icons.restaurant_menu),
+            label: const Text('Log Meal'),
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(Colors.orange),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAction(
+    BuildContext context,
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Card(
       elevation: 0,
       color: Theme.of(context).brightness == Brightness.dark 
@@ -693,7 +769,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),

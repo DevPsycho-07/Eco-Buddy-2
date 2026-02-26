@@ -15,7 +15,7 @@ namespace EcoBackend.Infrastructure.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
 
             modelBuilder.Entity("EcoBackend.Core.Entities.Activity", b =>
                 {
@@ -585,11 +585,67 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.ToTable("Challenges");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("ChatMessages");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.ChatSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ChatSessions");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.DailyLog", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<double>("AcHours")
+                        .HasColumnType("REAL");
 
                     b.Property<double>("BikeKm")
                         .HasColumnType("REAL");
@@ -609,7 +665,22 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("TEXT");
 
+                    b.Property<double?>("EcoScore")
+                        .HasColumnType("REAL");
+
                     b.Property<double>("ElectricityKwh")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("FishMeals")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("FoodWasteKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("HeatingHours")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("InternetHours")
                         .HasColumnType("REAL");
 
                     b.Property<int>("LocalFoodItems")
@@ -618,10 +689,26 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Property<int>("MeatMeals")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double>("NaturalGasTherms")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("PoultryMeals")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("RecycledToday")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("RedMeatMeals")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ReusableItems")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ScoreCategory")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ShowerFrequency")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("SingleUsePlasticItems")
@@ -630,8 +717,14 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Property<double>("TotalCO2")
                         .HasColumnType("REAL");
 
-                    b.Property<double>("TrainKm")
+                    b.Property<double>("TrainMetroKm")
                         .HasColumnType("REAL");
+
+                    b.Property<double>("TvPcHours")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("UsedCooling")
                         .HasColumnType("INTEGER");
@@ -645,12 +738,22 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Property<int>("VegMeals")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("VeganMeals")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("VegetarianMeals")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double>("WalkKm")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("WaterUsageLiters")
                         .HasColumnType("REAL");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "Date")
+                        .IsUnique();
 
                     b.ToTable("DailyLogs");
                 });
@@ -895,6 +998,38 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.NotificationPreference", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AchievementAlerts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("CommunityUpdates")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("DailyReminders")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("TipsAndSuggestions")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("WeeklyReports")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("NotificationPreferences");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.PasswordResetToken", b =>
                 {
                     b.Property<int>("Id")
@@ -928,26 +1063,24 @@ namespace EcoBackend.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<double>("ActualCO2")
+                    b.Property<double?>("Confidence")
                         .HasColumnType("REAL");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("Date")
+                    b.Property<string>("InputData")
+                        .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<double>("ErrorMargin")
-                        .HasColumnType("REAL");
 
                     b.Property<string>("ModelVersion")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<double>("PredictedCO2")
+                    b.Property<double>("PredictedScore")
                         .HasColumnType("REAL");
 
-                    b.Property<int>("UserId")
+                    b.Property<int?>("UserId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -955,6 +1088,53 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("PredictionLogs");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.PredictionTrip", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("DistanceKm")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("EndLatitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("EndLongitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("StartLatitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("StartLongitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TransportMode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date");
+
+                    b.ToTable("PredictionTrips");
                 });
 
             modelBuilder.Entity("EcoBackend.Core.Entities.RefreshToken", b =>
@@ -1202,8 +1382,14 @@ namespace EcoBackend.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("GoogleAuthId")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("HealthDataSync")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly?>("LastActivityDate")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -1272,6 +1458,10 @@ namespace EcoBackend.Infrastructure.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("GoogleAuthId")
+                        .IsUnique()
+                        .HasFilter("\"GoogleAuthId\" IS NOT NULL");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -1456,6 +1646,47 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserGoals");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.WeeklyLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("GeneralWasteKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("GroceryBill")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("NewClothesMonthly")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("RecycledWasteKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WasteBagCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("WeekStartDate")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "WeekStartDate")
+                        .IsUnique();
+
+                    b.ToTable("WeeklyLogs");
                 });
 
             modelBuilder.Entity("EcoBackend.Core.Entities.WeeklyReport", b =>
@@ -1686,6 +1917,28 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Navigation("TargetCategory");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.ChatMessage", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.ChatSession", "Session")
+                        .WithMany("Messages")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.ChatSession", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithMany("ChatSessions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.DailyLog", b =>
                 {
                     b.HasOne("EcoBackend.Core.Entities.User", "User")
@@ -1769,6 +2022,17 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.NotificationPreference", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithOne("NotificationPreferences")
+                        .HasForeignKey("EcoBackend.Core.Entities.NotificationPreference", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.PasswordResetToken", b =>
                 {
                     b.HasOne("EcoBackend.Core.Entities.User", "User")
@@ -1781,6 +2045,15 @@ namespace EcoBackend.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("EcoBackend.Core.Entities.PredictionLog", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EcoBackend.Core.Entities.PredictionTrip", b =>
                 {
                     b.HasOne("EcoBackend.Core.Entities.User", "User")
                         .WithMany()
@@ -1893,6 +2166,17 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.WeeklyLog", b =>
+                {
+                    b.HasOne("EcoBackend.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.WeeklyReport", b =>
                 {
                     b.HasOne("EcoBackend.Core.Entities.User", "User")
@@ -1977,6 +2261,11 @@ namespace EcoBackend.Infrastructure.Migrations
                     b.Navigation("UserChallenges");
                 });
 
+            modelBuilder.Entity("EcoBackend.Core.Entities.ChatSession", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
             modelBuilder.Entity("EcoBackend.Core.Entities.Trip", b =>
                 {
                     b.Navigation("Points");
@@ -1990,11 +2279,15 @@ namespace EcoBackend.Infrastructure.Migrations
 
                     b.Navigation("Challenges");
 
+                    b.Navigation("ChatSessions");
+
                     b.Navigation("DailyScores");
 
                     b.Navigation("EcoProfile");
 
                     b.Navigation("Goals");
+
+                    b.Navigation("NotificationPreferences");
 
                     b.Navigation("Trips");
                 });

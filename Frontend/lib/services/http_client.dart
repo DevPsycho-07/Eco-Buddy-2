@@ -55,6 +55,7 @@ class ApiClient {
     Map<String, String>? headers,
     dynamic body,
     int retryCount = 0,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     try {
       final token = await AuthService.getToken();
@@ -72,7 +73,7 @@ class ApiClient {
         url,
         headers: requestHeaders,
         body: body is String ? body : jsonEncode(body),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(timeout);
 
       // If token expired during request, refresh and retry
       if (response.statusCode == 401 && retryCount < maxRetries) {
@@ -80,7 +81,7 @@ class ApiClient {
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
           // Retry the request with new token
-          return post(url, headers: headers, body: body, retryCount: retryCount + 1);
+          return post(url, headers: headers, body: body, retryCount: retryCount + 1, timeout: timeout);
         } else {
           throw Exception('Session expired. Please log in again.');
         }

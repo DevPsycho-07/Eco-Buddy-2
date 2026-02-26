@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/activity_service.dart';
+import '../../core/providers/units_provider.dart';
+import '../../core/utils/unit_converter.dart';
 
-class AllActivitiesPage extends StatefulWidget {
+class AllActivitiesPage extends ConsumerStatefulWidget {
   const AllActivitiesPage({super.key});
 
   @override
-  State<AllActivitiesPage> createState() => _AllActivitiesPageState();
+  ConsumerState<AllActivitiesPage> createState() => _AllActivitiesPageState();
 }
 
-class _AllActivitiesPageState extends State<AllActivitiesPage> {
+class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
   Map<String, List<Activity>> _groupedActivities = {};
   bool _isLoading = true;
   String? _error;
@@ -186,7 +189,7 @@ class _AllActivitiesPageState extends State<AllActivitiesPage> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
-            '${isPositive ? '' : '+'}${activity.co2Impact.toStringAsFixed(1)} kg',
+            '${isPositive ? '' : '+'}${UnitConverter.formatWeight(activity.co2Impact.abs(), isMetric: ref.watch(unitsProvider) == 'metric')}',
             style: TextStyle(
               color: isPositive ? Colors.green : Colors.orange,
               fontWeight: FontWeight.bold,

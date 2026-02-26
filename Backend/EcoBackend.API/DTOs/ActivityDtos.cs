@@ -44,7 +44,7 @@ public class ActivityDto
 
 public class ActivityCreateDto
 {
-    public int ActivityTypeId { get; set; }
+    public int ActivityType { get; set; }
     public double Quantity { get; set; } = 1.0;
     public string? Unit { get; set; }
     public string? Notes { get; set; }

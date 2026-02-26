@@ -39,14 +39,21 @@ public class EcoDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     // Predictions
     public DbSet<UserEcoProfile> UserEcoProfiles => Set<UserEcoProfile>();
     public DbSet<DailyLog> DailyLogs => Set<DailyLog>();
+    public DbSet<WeeklyLog> WeeklyLogs => Set<WeeklyLog>();
     public DbSet<PredictionLog> PredictionLogs => Set<PredictionLog>();
+    public DbSet<PredictionTrip> PredictionTrips => Set<PredictionTrip>();
     
     // Notifications & Tokens
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    
+    // Chatbot
+    public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -57,6 +64,7 @@ public class EcoDbContext : IdentityDbContext<User, IdentityRole<int>, int>
         {
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Bio).HasMaxLength(500);
+            entity.HasIndex(e => e.GoogleAuthId).IsUnique().HasFilter("\"GoogleAuthId\" IS NOT NULL");
         });
         
         builder.Entity<DailyScore>(entity =>
@@ -117,6 +125,16 @@ public class EcoDbContext : IdentityDbContext<User, IdentityRole<int>, int>
             entity.HasIndex(e => e.UserId).IsUnique();
         });
         
+        builder.Entity<DailyLog>(entity =>
+        {
+            entity.HasIndex(e => new { e.UserId, e.Date }).IsUnique();
+        });
+        
+        builder.Entity<PredictionTrip>(entity =>
+        {
+            entity.HasIndex(e => new { e.UserId, e.Date });
+        });
+        
         // Notification & Token configurations
         builder.Entity<DeviceToken>(entity =>
         {
@@ -139,6 +157,36 @@ public class EcoDbContext : IdentityDbContext<User, IdentityRole<int>, int>
         {
             entity.HasIndex(e => e.Token).IsUnique();
             entity.HasIndex(e => e.UserId);
+        });
+        
+        // Notification preferences configuration
+        builder.Entity<NotificationPreference>(entity =>
+        {
+            entity.HasIndex(e => e.UserId).IsUnique();
+        });
+        
+        // Weekly log configuration
+        builder.Entity<WeeklyLog>(entity =>
+        {
+            entity.HasIndex(e => new { e.UserId, e.WeekStartDate }).IsUnique();
+        });
+        
+        // Chat session configuration
+        builder.Entity<ChatSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.ChatSessions)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        builder.Entity<ChatMessage>(entity =>
+        {
+            entity.HasOne(e => e.Session)
+                .WithMany(s => s.Messages)
+                .HasForeignKey(e => e.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
         
         // Seed Badge data

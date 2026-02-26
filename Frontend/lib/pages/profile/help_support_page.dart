@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
@@ -227,7 +228,7 @@ class HelpSupportPage extends StatelessWidget {
                     ),
                     title: const Text('Terms of Service'),
                     trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                    onTap: () {},
+                    onTap: () => context.push('/terms-of-service'),
                   ),
                   const Divider(height: 1),
                   ListTile(
@@ -241,7 +242,7 @@ class HelpSupportPage extends StatelessWidget {
                     ),
                     title: const Text('Privacy Policy'),
                     trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                    onTap: () {},
+                    onTap: () => context.push('/privacy-policy'),
                   ),
                 ],
               ),

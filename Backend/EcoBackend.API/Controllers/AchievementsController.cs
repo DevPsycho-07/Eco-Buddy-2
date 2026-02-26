@@ -159,4 +159,12 @@ public class AchievementsController : ControllerBase
         var summary = await _achievementService.GetSummaryAsync(userId);
         return Ok(summary);
     }
+
+    // Alternative route: POST /api/achievements/my-challenges/ with body { challenge: id }
+    // Frontend (Django convention) sends challenge ID in body instead of URL
+    [HttpPost("my-challenges")]
+    public async Task<IActionResult> JoinChallengeAlt([FromBody] JoinChallengeDto dto)
+    {
+        return await JoinChallenge(dto.Challenge);
+    }
 }

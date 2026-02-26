@@ -19,6 +19,9 @@ public class User : IdentityUser<int>
     public int Level { get; set; } = 1;
     public int ExperiencePoints { get; set; } = 0;
     
+    // Streak tracking
+    public DateOnly? LastActivityDate { get; set; }
+    
     // Preferences
     public string Units { get; set; } = "metric";
     public bool NotificationsEnabled { get; set; } = true;
@@ -26,6 +29,9 @@ public class User : IdentityUser<int>
     
     // Email verification
     public bool EmailVerified { get; set; } = false;
+    
+    // Google OAuth
+    public string? GoogleAuthId { get; set; }
     
     // Privacy settings
     public bool LocationTracking { get; set; } = false;
@@ -45,6 +51,8 @@ public class User : IdentityUser<int>
     public virtual ICollection<UserChallenge> Challenges { get; set; } = new List<UserChallenge>();
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
     public virtual UserEcoProfile? EcoProfile { get; set; }
+    public virtual NotificationPreference? NotificationPreferences { get; set; }
+    public virtual ICollection<ChatSession> ChatSessions { get; set; } = new List<ChatSession>();
     
     public void CalculateLevel()
     {
@@ -114,6 +122,30 @@ public class Notification
     
     // Navigation
     public virtual User User { get; set; } = null!;
+}
+
+public class NotificationPreference
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public bool DailyReminders { get; set; } = true;
+    public bool AchievementAlerts { get; set; } = true;
+    public bool WeeklyReports { get; set; } = true;
+    public bool TipsAndSuggestions { get; set; } = true;
+    public bool CommunityUpdates { get; set; } = false;
+    
+    // Navigation
+    public virtual User User { get; set; } = null!;
+    
+    /// <summary>Returns whether a given notification_type is opted-in.</summary>
+    public bool IsTypeEnabled(string notificationType) => notificationType switch
+    {
+        "achievement" or "badge" or "challenge" or "milestone" or "streak" or "level_up" or "goal" => AchievementAlerts,
+        "daily_reminder" => DailyReminders,
+        "weekly_report" => WeeklyReports,
+        "tip" => TipsAndSuggestions,
+        _ => CommunityUpdates,
+    };
 }
 
 public class PasswordResetToken

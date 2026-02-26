@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/dashboard_service.dart';
 
 class LeaderboardPage extends StatefulWidget {
   const LeaderboardPage({super.key});
@@ -9,29 +10,345 @@ class LeaderboardPage extends StatefulWidget {
 
 class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  final List<Map<String, dynamic>> _globalLeaders = [
-    {'rank': 1, 'name': 'EcoWarrior', 'score': 98, 'saved': '450 kg', 'avatar': '🌿', 'streak': 45},
-    {'rank': 2, 'name': 'GreenHero', 'score': 95, 'saved': '420 kg', 'avatar': '🌱', 'streak': 38},
-    {'rank': 3, 'name': 'NatureLover', 'score': 92, 'saved': '390 kg', 'avatar': '🍃', 'streak': 32},
-    {'rank': 4, 'name': 'TreeHugger', 'score': 89, 'saved': '365 kg', 'avatar': '🌳', 'streak': 28},
-    {'rank': 5, 'name': 'EarthSaver', 'score': 87, 'saved': '340 kg', 'avatar': '🌍', 'streak': 25},
-    {'rank': 6, 'name': 'ClimateChamp', 'score': 85, 'saved': '320 kg', 'avatar': '☀️', 'streak': 22},
-    {'rank': 7, 'name': 'EcoNinja', 'score': 83, 'saved': '300 kg', 'avatar': '🥷', 'streak': 20},
-    {'rank': 8, 'name': 'GreenGuru', 'score': 80, 'saved': '280 kg', 'avatar': '🧘', 'streak': 18},
-    {'rank': 156, 'name': 'You', 'score': 72, 'saved': '145 kg', 'avatar': '👤', 'isUser': true, 'streak': 15},
-  ];
-
-  final List<Map<String, dynamic>> _challenges = [
-    {'title': 'Car-Free Week', 'participants': 1245, 'ends': '3 days', 'prize': '🏆 Gold Badge', 'joined': true},
-    {'title': 'Zero Waste Weekend', 'participants': 892, 'ends': '5 days', 'prize': '♻️ Recycler Pro', 'joined': false},
-    {'title': 'Plant-Based February', 'participants': 3421, 'ends': '25 days', 'prize': '🌱 Vegan Master', 'joined': false},
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _globalLeaders = [];
+  String? _errorMessage;
+  String _selectedLocation = 'San Francisco, CA';
+  late List<Map<String, dynamic>> _challenges;
+  final List<String> _availableLocations = [
+    'San Francisco, CA',
+    'New York, NY',
+    'Los Angeles, CA',
+    'Chicago, IL',
+    'Austin, TX',
+    'Seattle, WA',
   ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _challenges = [
+      {'title': 'Car-Free Week', 'participants': 1245, 'ends': '3 days', 'prize': '🏆 Gold Badge', 'joined': true},
+      {'title': 'Zero Waste Weekend', 'participants': 892, 'ends': '5 days', 'prize': '♻️ Recycler Pro', 'joined': false},
+      {'title': 'Plant-Based February', 'participants': 3421, 'ends': '25 days', 'prize': '🌱 Vegan Master', 'joined': false},
+    ];
+    _loadLeaderboard();
+  }
+
+  Future<void> _loadLeaderboard() async {
+    try {
+      final leaderboard = await DashboardService.getLeaderboard(limit: 50);
+      setState(() {
+        _globalLeaders = leaderboard;
+        _isLoading = false;
+      });
+      // Leaderboard loaded successfully
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load leaderboard: $e';
+        _isLoading = false;
+      });
+      // Failed to load leaderboard
+    }
+  }
+
+  void _changeLocation() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Select Your Location',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _availableLocations.length,
+              itemBuilder: (context, index) {
+                final location = _availableLocations[index];
+                return ListTile(
+                  leading: location == _selectedLocation
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : const Icon(Icons.circle_outlined),
+                  title: Text(location),
+                  onTap: () {
+                    setState(() => _selectedLocation = location);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Location changed to $location')),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAllChallenges() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        builder: (context, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'All Challenges',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: _challenges.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: _buildChallengeCard(_challenges[index]),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _joinChallenge(int index) {
+    setState(() {
+      _challenges[index]['joined'] = true;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Joined "${_challenges[index]['title']}" challenge!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _viewChallengeProgress(int index) {
+    final challenge = _challenges[index];
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(challenge['title']),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Challenge Progress', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            const Text('Status: Participating'),
+            Text('Participants: ${challenge['participants']}'),
+            Text('Time Remaining: ${challenge['ends']}'),
+            Text('Prize: ${challenge['prize']}'),
+            const SizedBox(height: 16),
+            const LinearProgressIndicator(
+              value: 0.65,
+              minHeight: 8,
+            ),
+            const SizedBox(height: 8),
+            const Text('Progress: 65%', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInviteDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Invite Friends'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Share your eco journey with friends! Your invite code:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'ECO-2024-ABCD',
+                      style: TextStyle(fontFamily: 'monospace', fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Icon(Icons.copy, size: 18),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Friends who join using your code get 100 bonus EcoPoints!',
+              style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Invite code copied to clipboard!')),
+              );
+            },
+            icon: const Icon(Icons.copy),
+            label: const Text('Copy Code'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQRCode() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Invite via QR Code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Scan this QR code to join our eco community!'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Icon(Icons.qr_code_2, size: 80, color: Colors.grey),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Share this QR code with your friends',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('QR code shared!')),
+              );
+            },
+            icon: const Icon(Icons.share),
+            label: const Text('Share'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _viewFullLocalLeaderboard() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.8,
+        maxChildSize: 0.95,
+        minChildSize: 0.3,
+        builder: (context, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Local Leaderboard - $_selectedLocation',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: _globalLeaders.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: _buildLeaderboardItem(_globalLeaders[index]),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -75,6 +392,44 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
   }
 
   Widget _buildGlobalTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+              const SizedBox(height: 16),
+              Text(_errorMessage!, textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() => _isLoading = true);
+                  _loadLeaderboard();
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_globalLeaders.isEmpty) {
+      return center(
+        child: const Text('No leaderboard data available'),
+      );
+    }
+
+    final topThree = _globalLeaders.take(3).toList();
+    final rest = _globalLeaders.skip(3).toList();
+
     return CustomScrollView(
       slivers: [
         // Top 3 Podium
@@ -92,109 +447,61 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // 2nd Place
-                    _buildPodiumItem(_globalLeaders[1], 2, 80),
+                    if (topThree.length > 1)
+                      _buildPodiumItem(topThree[1], 2, 80)
+                    else
+                      const SizedBox(width: 70),
                     const SizedBox(width: 8),
-                    // 1st Place
-                    _buildPodiumItem(_globalLeaders[0], 1, 100),
+                    if (topThree.isNotEmpty)
+                      _buildPodiumItem(topThree[0], 1, 100),
                     const SizedBox(width: 8),
-                    // 3rd Place
-                    _buildPodiumItem(_globalLeaders[2], 3, 60),
+                    if (topThree.length > 2)
+                      _buildPodiumItem(topThree[2], 3, 60)
+                    else
+                      const SizedBox(width: 70),
                   ],
                 ),
               ],
             ),
           ),
         ),
-        // User Position Card
-        SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            child: Card(
-              elevation: 0,
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? const Color(0xFF252525) 
-                  : Colors.green[50],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green[100],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Text('👤', style: TextStyle(fontSize: 24)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Your Position',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          Text(
-                            'Rank #156 • Score: 72',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      children: [
-                        const Icon(Icons.arrow_upward, color: Colors.green),
-                        Text(
-                          '+12',
-                          style: TextStyle(
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 16)),
         // Leaderboard List
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              if (index >= _globalLeaders.length - 1) return null; // Skip user entry shown separately
-              final leader = _globalLeaders[index];
-              if (leader['rank'] <= 3) return const SizedBox.shrink(); // Already in podium
-              return _buildLeaderboardItem(leader);
-            },
-            childCount: _globalLeaders.length,
+            (context, index) => _buildLeaderboardItem(rest[index]),
+            childCount: rest.length,
           ),
         ),
       ],
     );
   }
 
+  Widget center({required Widget child}) {
+    return Center(child: child);
+  }
+
   Widget _buildPodiumItem(Map<String, dynamic> leader, int position, double height) {
     final colors = {1: Colors.amber, 2: Colors.grey[400], 3: Colors.brown[300]};
     final medals = {1: '🥇', 2: '🥈', 3: '🥉'};
+    final username = leader['username'] ?? 'Unknown';
+    final ecoScore = leader['eco_score'] ?? 0;
+    final avatar = username.isNotEmpty ? username[0].toUpperCase() : '?';
     
     return Column(
       children: [
-        Text(leader['avatar'], style: const TextStyle(fontSize: 32)),
+        CircleAvatar(
+          backgroundColor: colors[position]?.withValues(alpha: 0.3),
+          child: Text(avatar, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        ),
         const SizedBox(height: 4),
         Text(
-          leader['name'],
+          username,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         Text(
-          '${leader['score']} pts',
+          '$ecoScore pts',
           style: TextStyle(color: Colors.grey[600], fontSize: 11),
         ),
         const SizedBox(height: 8),
@@ -228,13 +535,17 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
   }
 
   Widget _buildLeaderboardItem(Map<String, dynamic> leader) {
-    final isUser = leader['isUser'] == true;
+    final username = leader['username'] ?? 'Unknown';
+    final ecoScore = leader['eco_score'] ?? 0;
+    final totalCo2Saved = leader['total_co2_saved'] ?? 0;
+    final rank = leader['rank'] ?? 0;
+    final avatar = username.isNotEmpty ? username[0].toUpperCase() : '?';
     
     return Card(
       elevation: 0,
       color: Theme.of(context).brightness == Brightness.dark 
           ? const Color(0xFF252525) 
-          : (isUser ? Colors.green[50] : Colors.white),
+          : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -246,43 +557,42 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
             SizedBox(
               width: 32,
               child: Text(
-                '#${leader['rank']}',
+                '#$rank',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isUser ? Colors.green : Colors.grey[600],
+                  color: Colors.grey[600],
                 ),
               ),
             ),
             CircleAvatar(
-              backgroundColor: isUser ? Colors.green[100] : Colors.grey[200],
-              child: Text(leader['avatar'], style: const TextStyle(fontSize: 18)),
+              backgroundColor: Colors.grey[200],
+              child: Text(avatar, style: const TextStyle(fontSize: 18)),
             ),
           ],
         ),
         title: Text(
-          leader['name'],
-          style: TextStyle(
-            fontWeight: isUser ? FontWeight.bold : FontWeight.w500,
+          username,
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
           ),
         ),
         subtitle: Row(
           children: [
-            Text('Saved: ${leader['saved']}'),
+            Text('Saved: ${totalCo2Saved.toStringAsFixed(1)} kg CO₂'),
             const SizedBox(width: 8),
-            const Icon(Icons.local_fire_department, size: 14, color: Colors.orange),
-            Text(' ${leader['streak']}d', style: const TextStyle(fontSize: 12)),
+            Text('Level ${leader['level'] ?? 1}'),
           ],
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isUser ? Colors.green : Colors.green[100],
+            color: Colors.green[100],
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            '${leader['score']}',
+            '$ecoScore',
             style: TextStyle(
-              color: isUser ? Colors.white : Colors.green[700],
+              color: Colors.green[700],
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -319,7 +629,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: _showInviteDialog,
               icon: const Icon(Icons.person_add),
               label: const Text('Invite Friends'),
               style: ElevatedButton.styleFrom(
@@ -330,7 +640,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: _showQRCode,
               icon: const Icon(Icons.qr_code),
               label: const Text('Share Invite Code'),
             ),
@@ -352,7 +662,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
             title: const Text('San Francisco, CA'),
             subtitle: const Text('Your local community'),
             trailing: TextButton(
-              onPressed: () {},
+              onPressed: _changeLocation,
               child: const Text('Change'),
             ),
           ),
@@ -367,7 +677,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
         const SizedBox(height: 16),
         Center(
           child: OutlinedButton(
-            onPressed: () {},
+            onPressed: _viewFullLocalLeaderboard,
             child: const Text('View Full Local Leaderboard'),
           ),
         ),
@@ -390,7 +700,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
             ),
             const Spacer(),
             TextButton(
-              onPressed: () {},
+              onPressed: _showAllChallenges,
               child: const Text('View All'),
             ),
           ],
@@ -433,6 +743,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
 
   Widget _buildChallengeCard(Map<String, dynamic> challenge) {
     final joined = challenge['joined'] as bool;
+    final index = _challenges.indexOf(challenge);
     
     return Card(
       elevation: 0,
@@ -518,11 +829,11 @@ class _LeaderboardPageState extends State<LeaderboardPage> with SingleTickerProv
               width: double.infinity,
               child: joined
                   ? OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () => _viewChallengeProgress(index),
                       child: const Text('View Progress'),
                     )
                   : ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => _joinChallenge(index),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,

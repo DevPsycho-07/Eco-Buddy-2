@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Eco Daily Score</string>
+	<string>Eco Buddy</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>eco_daily_score</string>
+	<string>eco_buddy_dotnet</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -51,5 +51,27 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	
+	<!-- Location permission messages -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need access to your location to track your eco-friendly activities and calculate carbon footprint savings.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We need access to your location to track your eco-friendly activities and calculate carbon footprint savings.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>We need access to your location to track your eco-friendly activities and calculate carbon footprint savings.</string>
+	
+	<!-- Camera permission message -->
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to allow you to take a profile picture.</string>
+	
+	<!-- Photo library permission message -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photos to allow you to upload a profile picture.</string>
+	<key>NSPhotoLibraryAddOnlyUsageDescription</key>
+	<string>We need permission to save photos to your library.</string>
+	
+	<!-- Notification permission (required for iOS 10.0+) -->
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>We send notifications to keep you updated about your eco activities, achievements, and milestones.</string>
 </dict>
 </plist>

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../services/http_client.dart';
+import '../../services/notification_service.dart';
 import '../../core/config/api_config.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -19,11 +20,27 @@ class _NotificationsPageState extends State<NotificationsPage> {
   bool _weeklyReports = true;
   bool _tipsAndSuggestions = true;
   bool _communityUpdates = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _notificationsEnabled = widget.notificationsEnabled;
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await NotificationService.getNotificationPreferences();
+    if (mounted) {
+      setState(() {
+        _dailyReminders = prefs['daily_reminders'] ?? true;
+        _achievementAlerts = prefs['achievement_alerts'] ?? true;
+        _weeklyReports = prefs['weekly_reports'] ?? true;
+        _tipsAndSuggestions = prefs['tips_and_suggestions'] ?? true;
+        _communityUpdates = prefs['community_updates'] ?? false;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveNotificationSettings() async {
@@ -62,13 +79,27 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
+  Future<void> _savePreference(String key, bool value) async {
+    final success = await NotificationService.updateNotificationPreferences({key: value});
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to save preference'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -162,7 +193,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     subtitle: 'Get reminded to log your activities',
                     value: _dailyReminders,
                     onChanged: _notificationsEnabled
-                        ? (value) => setState(() => _dailyReminders = value)
+                        ? (value) {
+                            setState(() => _dailyReminders = value);
+                            _savePreference('daily_reminders', value);
+                          }
                         : null,
                   ),
                   const Divider(height: 1),
@@ -172,7 +206,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     subtitle: 'Celebrate when you unlock achievements',
                     value: _achievementAlerts,
                     onChanged: _notificationsEnabled
-                        ? (value) => setState(() => _achievementAlerts = value)
+                        ? (value) {
+                            setState(() => _achievementAlerts = value);
+                            _savePreference('achievement_alerts', value);
+                          }
                         : null,
                   ),
                   const Divider(height: 1),
@@ -182,7 +219,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     subtitle: 'Get your weekly eco impact summary',
                     value: _weeklyReports,
                     onChanged: _notificationsEnabled
-                        ? (value) => setState(() => _weeklyReports = value)
+                        ? (value) {
+                            setState(() => _weeklyReports = value);
+                            _savePreference('weekly_reports', value);
+                          }
                         : null,
                   ),
                   const Divider(height: 1),
@@ -192,7 +232,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     subtitle: 'Receive eco-friendly tips',
                     value: _tipsAndSuggestions,
                     onChanged: _notificationsEnabled
-                        ? (value) => setState(() => _tipsAndSuggestions = value)
+                        ? (value) {
+                            setState(() => _tipsAndSuggestions = value);
+                            _savePreference('tips_and_suggestions', value);
+                          }
                         : null,
                   ),
                   const Divider(height: 1),
@@ -202,7 +245,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     subtitle: 'News from the eco community',
                     value: _communityUpdates,
                     onChanged: _notificationsEnabled
-                        ? (value) => setState(() => _communityUpdates = value)
+                        ? (value) {
+                            setState(() => _communityUpdates = value);
+                            _savePreference('community_updates', value);
+                          }
                         : null,
                   ),
                 ],

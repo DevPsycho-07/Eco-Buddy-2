@@ -199,21 +199,13 @@ class DioClient {
       if (refreshToken == null) return false;
 
       final response = await Dio().post(
-        '${ApiConfig.baseUrl}/users/token/refresh',
-        data: {'refreshToken': refreshToken},
+        '${ApiConfig.baseUrl}/api/auth/refresh/',
+        data: {'refresh': refreshToken},
       );
 
       if (response.statusCode == 200) {
-        final newAccessToken = response.data['accessToken'];
-        final newRefreshToken = response.data['refreshToken'];
-        
+        final newAccessToken = response.data['access'];
         await storage.write(key: 'access_token', value: newAccessToken);
-        
-        // Store new refresh token (token rotation)
-        if (newRefreshToken != null) {
-          await storage.write(key: 'refresh_token', value: newRefreshToken);
-        }
-        
         AppLogger.info('Token refreshed successfully');
         return true;
       }

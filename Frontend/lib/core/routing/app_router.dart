@@ -34,19 +34,33 @@ import '../../pages/analytics/analytics_page.dart';
 import '../../pages/leaderboard/leaderboard_page.dart';
 import '../../pages/achievements/achievements_page.dart';
 import '../../pages/settings/settings_page.dart';
-import '../../pages/settings/background_settings_page.dart';
+import '../../pages/chat/eco_chat_page.dart';
 import '../../pages/notifications/notifications_page.dart';
+import '../../pages/profile/notifications_page.dart' as profile_notifications;
+import '../../pages/profile/edit_profile_page.dart';
+import '../../pages/profile/help_support_page.dart';
+import '../../pages/profile/export_data_page.dart';
+import '../../pages/legal/terms_of_service_page.dart';
+import '../../pages/legal/privacy_policy_page.dart';
 import '../navigation/app_shell.dart';
 import '../utils/app_logger.dart';
 
 /// Router configuration
 class AppRouter {
-  /// Update the cached auth state (called by AuthService)
+  /// Update the cached auth state and refresh router (used for logout)
   static void updateAuthState(bool isLoggedIn) {
     _cachedAuthState = isLoggedIn;
     AppLogger.info('Auth state updated: isLoggedIn=$isLoggedIn');
     // Refresh router to trigger redirect check
     router.refresh();
+  }
+
+  /// Silently set auth state without refreshing router.
+  /// Used during login/signup so the UI can check eco profile
+  /// before the router redirect fires.
+  static void setAuthState(bool isLoggedIn) {
+    _cachedAuthState = isLoggedIn;
+    AppLogger.info('Auth state set (no refresh): isLoggedIn=$isLoggedIn');
   }
   
   static final GoRouter router = GoRouter(
@@ -111,11 +125,6 @@ class AppRouter {
             builder: (context, state) => const ActivityLogPage(),
           ),
           GoRoute(
-            path: '/all-activities',
-            name: 'all-activities',
-            builder: (context, state) => const AllActivitiesPage(),
-          ),
-          GoRoute(
             path: '/analytics',
             name: 'analytics',
             builder: (context, state) => const AnalyticsPage(),
@@ -141,18 +150,61 @@ class AppRouter {
             builder: (context, state) => const SettingsPage(),
           ),
           GoRoute(
-            path: '/background-settings',
-            name: 'background-settings',
-            builder: (context, state) => const BackgroundSettingsPage(),
+            path: '/chat',
+            name: 'chat',
+            builder: (context, state) => const EcoChatPage(),
           ),
         ],
       ),
 
-      // ============ Notifications (outside shell) ============
+      // ============ Pages outside shell ============
+      GoRoute(
+        path: '/all-activities',
+        name: 'all-activities',
+        builder: (context, state) => const AllActivitiesPage(),
+      ),
       GoRoute(
         path: '/notifications',
         name: 'notifications',
         builder: (context, state) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        name: 'edit-profile',
+        builder: (context, state) {
+          final profileData = state.extra as Map<String, dynamic>?;
+          return EditProfilePage(profileData: profileData ?? {});
+        },
+      ),
+      GoRoute(
+        path: '/notification-settings',
+        name: 'notification-settings',
+        builder: (context, state) {
+          final notificationsEnabled = state.extra as bool? ?? true;
+          return profile_notifications.NotificationsPage(
+            notificationsEnabled: notificationsEnabled,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/help-support',
+        name: 'help-support',
+        builder: (context, state) => const HelpSupportPage(),
+      ),
+      GoRoute(
+        path: '/export-data',
+        name: 'export-data',
+        builder: (context, state) => const ExportDataPage(),
+      ),
+      GoRoute(
+        path: '/terms-of-service',
+        name: 'terms-of-service',
+        builder: (context, state) => const TermsOfServicePage(),
+      ),
+      GoRoute(
+        path: '/privacy-policy',
+        name: 'privacy-policy',
+        builder: (context, state) => const PrivacyPolicyPage(),
       ),
     ],
     errorBuilder: (context, state) => _ErrorPage(state.error.toString()),

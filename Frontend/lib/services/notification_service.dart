@@ -27,8 +27,8 @@ class UserNotification {
       title: json['title'] as String,
       message: json['message'] as String,
       type: json['type'] as String,
-      isRead: json['isRead'] as bool,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      isRead: json['is_read'] as bool,
+      createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 
@@ -49,10 +49,63 @@ class UserNotification {
 class NotificationService {
   static const String baseUrl = ApiConfig.baseUrl;
 
+  /// Get notification preferences (per-category toggles)
+  static Future<Map<String, bool>> getNotificationPreferences() async {
+    try {
+      final response = await ApiClient.get(
+        Uri.parse('$baseUrl/users/notification-preferences/'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return {
+          'daily_reminders': data['daily_reminders'] as bool? ?? true,
+          'achievement_alerts': data['achievement_alerts'] as bool? ?? true,
+          'weekly_reports': data['weekly_reports'] as bool? ?? true,
+          'tips_and_suggestions': data['tips_and_suggestions'] as bool? ?? true,
+          'community_updates': data['community_updates'] as bool? ?? false,
+        };
+      } else {
+        throw Exception('Failed to load preferences: ${response.statusCode}');
+      }
+    } catch (e) {
+      AppLogger.error('Failed to load notification preferences', error: e);
+      // Return defaults
+      return {
+        'daily_reminders': true,
+        'achievement_alerts': true,
+        'weekly_reports': true,
+        'tips_and_suggestions': true,
+        'community_updates': false,
+      };
+    }
+  }
+
+  /// Update notification preferences (per-category toggles)
+  static Future<bool> updateNotificationPreferences(Map<String, bool> prefs) async {
+    try {
+      final response = await ApiClient.patch(
+        Uri.parse('$baseUrl/users/notification-preferences/'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(prefs),
+      );
+
+      if (response.statusCode == 200) {
+        AppLogger.info('Notification preferences updated');
+        return true;
+      } else {
+        throw Exception('Failed to update preferences: ${response.statusCode}');
+      }
+    } catch (e) {
+      AppLogger.error('Failed to update notification preferences', error: e);
+      return false;
+    }
+  }
+
   /// Get all notifications for current user
   static Future<List<UserNotification>> getNotifications() async {
     try {
-      final response = await ApiClient.get(Uri.parse('$baseUrl/users/notifications'));
+      final response = await ApiClient.get(Uri.parse('$baseUrl/users/notifications/'));
       
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
@@ -75,7 +128,7 @@ class NotificationService {
   /// Get unread notification count
   static Future<int> getUnreadCount() async {
     try {
-      final response = await ApiClient.get(Uri.parse('$baseUrl/users/notifications/unread-count'));
+      final response = await ApiClient.get(Uri.parse('$baseUrl/users/notifications/unread-count/'));
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -94,7 +147,7 @@ class NotificationService {
   static Future<bool> markAsRead(int notificationId) async {
     try {
       final response = await ApiClient.post(
-        Uri.parse('$baseUrl/users/notifications/$notificationId/mark-as-read'),
+        Uri.parse('$baseUrl/users/notifications/$notificationId/mark-as-read/'),
       );
       
       if (response.statusCode == 200) {
@@ -113,7 +166,7 @@ class NotificationService {
   static Future<bool> markAllAsRead() async {
     try {
       final response = await ApiClient.post(
-        Uri.parse('$baseUrl/users/notifications/mark-all-as-read'),
+        Uri.parse('$baseUrl/users/notifications/mark-all-as-read/'),
       );
       
       if (response.statusCode == 200) {
@@ -132,7 +185,7 @@ class NotificationService {
   static Future<bool> deleteAllRead() async {
     try {
       final response = await ApiClient.delete(
-        Uri.parse('$baseUrl/users/notifications/delete-read'),
+        Uri.parse('$baseUrl/users/notifications/delete-read/'),
       );
       
       if (response.statusCode == 200 || response.statusCode == 204) {
@@ -151,7 +204,7 @@ class NotificationService {
   static Future<bool> deleteNotification(int notificationId) async {
     try {
       final response = await ApiClient.delete(
-        Uri.parse('$baseUrl/users/notifications/$notificationId'),
+        Uri.parse('$baseUrl/users/notifications/$notificationId/'),
       );
       
       if (response.statusCode == 200 || response.statusCode == 204) {

@@ -31,10 +31,14 @@ class OfflineStorage {
   static const String _userBoxName = 'user_data';
   static const String _cacheBoxName = 'api_cache';
   static const String _actionsBoxName = 'offline_actions';
+  static const String _settingsBoxName = 'settings';
+  static const String _appCacheBoxName = 'app_cache';
 
   late Box _userBox;
   late Box _cacheBox;
   late Box _actionsBox;
+  late Box _settingsBox;
+  late Box _appCacheBox;
 
   /// Initialize Hive and open boxes
   Future<void> init() async {
@@ -44,6 +48,8 @@ class OfflineStorage {
       _userBox = await Hive.openBox(_userBoxName);
       _cacheBox = await Hive.openBox(_cacheBoxName);
       _actionsBox = await Hive.openBox(_actionsBoxName);
+      _settingsBox = await Hive.openBox(_settingsBoxName);
+      _appCacheBox = await Hive.openBox(_appCacheBoxName);
       
       AppLogger.info('Offline storage initialized');
     } catch (e) {
@@ -90,6 +96,14 @@ class OfflineStorage {
     await _userBox.clear();
     AppLogger.info('User data cleared from offline storage');
   }
+
+  // ==================== Settings ====================
+
+  /// Get settings box for direct access
+  Box getSettingsBox() => _settingsBox;
+
+  /// Get app cache box for direct access
+  Box getAppCacheBox() => _appCacheBox;
 
   // ==================== Theme Settings ====================
 

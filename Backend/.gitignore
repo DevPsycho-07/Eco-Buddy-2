@@ -8,3 +8,8 @@ obj/
 *.user
 *.suo
 publish/
+
+# LLM model files (large binaries — store separately)
+*.gguf
+*.ggml
+models/

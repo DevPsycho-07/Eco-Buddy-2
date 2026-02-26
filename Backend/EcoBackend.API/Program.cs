@@ -12,7 +12,11 @@ using EcoBackend.Infrastructure.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower;
+    });
 builder.Services.AddEndpointsApiExplorer();
 
 // Configure Swagger with JWT support
@@ -115,6 +119,9 @@ builder.Services.AddHangfire(config => config
 builder.Services.AddHangfireServer();
 
 // Register services
+builder.Services.AddHttpClient(); // required by ChatbotService
+builder.Services.AddSingleton<EcoBackend.API.Services.LlamaModelService>();
+builder.Services.AddHostedService<EcoBackend.API.Services.LlamaModelLoaderService>();
 builder.Services.AddScoped<EcoBackend.API.Services.AchievementService>();
 builder.Services.AddScoped<EcoBackend.API.Services.EmailService>();
 builder.Services.AddScoped<EcoBackend.API.Services.NotificationService>();
@@ -124,9 +131,11 @@ builder.Services.AddScoped<EcoBackend.API.Services.ActivityService>();
 builder.Services.AddScoped<EcoBackend.API.Services.AnalyticsService>();
 builder.Services.AddScoped<EcoBackend.API.Services.TravelService>();
 builder.Services.AddScoped<EcoBackend.API.Services.UserService>();
+builder.Services.AddSingleton<EcoBackend.API.Services.EcoScorePredictorService>();
 builder.Services.AddScoped<EcoBackend.API.Services.PredictionService>();
 builder.Services.AddScoped<EcoBackend.API.Services.DailyScoreService>();
 builder.Services.AddScoped<EcoBackend.API.Services.GoalService>();
+builder.Services.AddScoped<EcoBackend.API.Services.ChatbotService>();
 
 var app = builder.Build();
 
@@ -142,6 +151,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
+
+// Strip trailing slashes so Flutter URLs like /api/users/profile/ match routes
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value;
+    if (path != "/" && path?.EndsWith("/") == true)
+        context.Request.Path = path.TrimEnd('/');
+    await next();
+});
 
 // Serve static files from media folder
 var mediaPath = Path.Combine(Directory.GetCurrentDirectory(), "media");
@@ -176,7 +194,8 @@ app.MapGet("/api", () => new
         achievements = "/api/achievements",
         travel = "/api/travel",
         analytics = "/api/analytics",
-        predictions = "/api/predictions"
+        predictions = "/api/predictions",
+        chatbot = "/api/chatbot"
     }
 });
 

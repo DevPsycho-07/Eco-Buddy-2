@@ -10,7 +10,7 @@ class EcoProfileService {
   static Future<bool> hasCompletedSetup() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/profile'),
+        Uri.parse('$baseUrl/predictions/profile/'),
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -22,7 +22,7 @@ class EcoProfileService {
   static Future<Map<String, dynamic>?> getProfile() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/profile'),
+        Uri.parse('$baseUrl/predictions/profile/'),
       );
 
       if (response.statusCode == 200) {
@@ -52,21 +52,21 @@ class EcoProfileService {
   }) async {
     try {
       final response = await ApiClient.post(
-        Uri.parse('$baseUrl/predictions/profile'),
+        Uri.parse('$baseUrl/predictions/profile/'),
         body: jsonEncode({
-          'householdSize': householdSize,
-          'ageGroup': ageGroup,
-          'lifestyleType': lifestyleType,
-          'locationType': locationType,
-          'vehicleType': vehicleType,
-          'carFuelType': carFuelType,
-          'dietType': dietType,
-          'usesSolarPanels': usesSolarPanels,
-          'smartThermostat': smartThermostat,
-          'recyclingPracticed': recyclingPracticed,
-          'compostingPracticed': compostingPracticed,
-          'wasteBagSize': wasteBagSize,
-          'socialActivity': socialActivity,
+          'household_size': householdSize,
+          'age_group': ageGroup,
+          'lifestyle_type': lifestyleType,
+          'location_type': locationType,
+          'vehicle_type': vehicleType,
+          'car_fuel_type': carFuelType,
+          'diet_type': dietType,
+          'uses_solar_panels': usesSolarPanels,
+          'smart_thermostat': smartThermostat,
+          'recycling_practiced': recyclingPracticed,
+          'composting_practiced': compostingPracticed,
+          'waste_bag_size': wasteBagSize,
+          'social_activity': socialActivity,
         }),
       );
 
@@ -108,22 +108,22 @@ class EcoProfileService {
   }) async {
     try {
       final Map<String, dynamic> body = {};
-      if (householdSize != null) body['householdSize'] = householdSize;
-      if (ageGroup != null) body['ageGroup'] = ageGroup;
-      if (lifestyleType != null) body['lifestyleType'] = lifestyleType;
-      if (locationType != null) body['locationType'] = locationType;
-      if (vehicleType != null) body['vehicleType'] = vehicleType;
-      if (carFuelType != null) body['carFuelType'] = carFuelType;
-      if (dietType != null) body['dietType'] = dietType;
-      if (usesSolarPanels != null) body['usesSolarPanels'] = usesSolarPanels;
-      if (smartThermostat != null) body['smartThermostat'] = smartThermostat;
-      if (recyclingPracticed != null) body['recyclingPracticed'] = recyclingPracticed;
-      if (compostingPracticed != null) body['compostingPracticed'] = compostingPracticed;
-      if (wasteBagSize != null) body['wasteBagSize'] = wasteBagSize;
-      if (socialActivity != null) body['socialActivity'] = socialActivity;
+      if (householdSize != null) body['household_size'] = householdSize;
+      if (ageGroup != null) body['age_group'] = ageGroup;
+      if (lifestyleType != null) body['lifestyle_type'] = lifestyleType;
+      if (locationType != null) body['location_type'] = locationType;
+      if (vehicleType != null) body['vehicle_type'] = vehicleType;
+      if (carFuelType != null) body['car_fuel_type'] = carFuelType;
+      if (dietType != null) body['diet_type'] = dietType;
+      if (usesSolarPanels != null) body['uses_solar_panels'] = usesSolarPanels;
+      if (smartThermostat != null) body['smart_thermostat'] = smartThermostat;
+      if (recyclingPracticed != null) body['recycling_practiced'] = recyclingPracticed;
+      if (compostingPracticed != null) body['composting_practiced'] = compostingPracticed;
+      if (wasteBagSize != null) body['waste_bag_size'] = wasteBagSize;
+      if (socialActivity != null) body['social_activity'] = socialActivity;
 
       final response = await ApiClient.put(
-        Uri.parse('$baseUrl/predictions/profile'),
+        Uri.parse('$baseUrl/predictions/profile/'),
         body: jsonEncode(body),
       );
 
@@ -151,7 +151,7 @@ class EcoProfileService {
   static Future<Map<String, dynamic>?> getDashboard() async {
     try {
       final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/dashboard'),
+        Uri.parse('$baseUrl/predictions/dashboard/'),
       );
 
       if (response.statusCode == 200) {
@@ -167,7 +167,7 @@ class EcoProfileService {
   static Future<Map<String, dynamic>?> getPrediction() async {
     try {
       final response = await ApiClient.post(
-        Uri.parse('$baseUrl/predictions/predict'),
+        Uri.parse('$baseUrl/predictions/predict/'),
         body: jsonEncode({}),
       );
 

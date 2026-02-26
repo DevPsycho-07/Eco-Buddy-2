@@ -3,9 +3,8 @@ import '../../pages/tips/tips_page.dart';
 import '../../pages/history/history_page.dart';
 import '../../pages/leaderboard/leaderboard_page.dart';
 import '../../pages/settings/settings_page.dart';
-import '../../pages/permissions/permissions_page.dart';
 import '../../pages/travel/travel_insights_page.dart';
-import '../../pages/privacy/privacy_dashboard_page.dart';
+import '../../pages/chat/eco_chat_page.dart';
 
 class AppDrawer extends StatelessWidget {
   final Function(int) onPageSelected;
@@ -84,6 +83,10 @@ class AppDrawer extends StatelessWidget {
           _buildDrawerItem(context, Icons.person, 'Profile', () => onPageSelected(4), currentIndex == 4),
           const Divider(),
           _buildDrawerSection('MORE'),
+          _buildDrawerItem(context, Icons.chat, 'Chat Assistant', () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const EcoChatPage()));
+          }, false),
           _buildDrawerItem(context, Icons.lightbulb_outline, 'Tips & Suggestions', () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(builder: (_) => const TipsPage()));
@@ -102,14 +105,6 @@ class AppDrawer extends StatelessWidget {
           }, false),
           const Divider(),
           _buildDrawerSection('SETTINGS'),
-          _buildDrawerItem(context, Icons.security, 'Permissions', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const PermissionsPage()));
-          }, false),
-          _buildDrawerItem(context, Icons.privacy_tip, 'Privacy Dashboard', () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyDashboardPage()));
-          }, false),
           _buildDrawerItem(context, Icons.settings, 'Settings', () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));

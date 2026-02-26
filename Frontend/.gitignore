@@ -8,6 +8,17 @@
 .build/
 .buildlog/
 .history
+
+# Environment variables (secrets — never commit)
+.env
+.env.local
+.env.*.local
+
+# Firebase / Google config files (contain API keys — never commit)
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
 .svn/
 .swiftpm/
 migrate_working_dir/

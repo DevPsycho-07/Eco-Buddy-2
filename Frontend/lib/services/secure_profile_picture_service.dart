@@ -43,14 +43,14 @@ class SecureProfilePictureService {
       AppLogger.info('Uploading profile picture: $filePath');
 
       final formData = FormData.fromMap({
-        'profilePicture': await MultipartFile.fromFile(
+        'profile_picture': await MultipartFile.fromFile(
           filePath,
           filename: 'profile.jpg',
         ),
       });
 
       final response = await _dio.post(
-        '$baseUrl/users/upload-picture',
+        '$baseUrl/users/profile-picture/',
         data: formData,
         options: Options(
           headers: {
@@ -63,7 +63,7 @@ class SecureProfilePictureService {
         // Clear cache after upload
         clearCache(cacheKey: 'self');
         AppLogger.info('Profile picture uploaded successfully');
-        return response.data['profilePicture'] as String?;
+        return response.data['profile_picture_url'] as String?;
       }
 
       AppLogger.warning('Failed to upload profile picture: ${response.statusCode}');
@@ -106,8 +106,8 @@ class SecureProfilePictureService {
       }
       
       final url = userId != null
-          ? '$baseUrl/users/profile-picture/$userId'
-          : '$baseUrl/users/profile-picture';
+          ? '$baseUrl/users/profile-picture/$userId/'
+          : '$baseUrl/users/profile-picture/';
 
       AppLogger.info('Fetching profile picture from: $url');
 
@@ -164,7 +164,7 @@ class SecureProfilePictureService {
       AppLogger.info('Deleting profile picture');
 
       final response = await _dio.delete(
-        '$baseUrl/users/profile-picture',
+        '$baseUrl/users/profile-picture/',
       );
 
       if (response.statusCode == 200) {

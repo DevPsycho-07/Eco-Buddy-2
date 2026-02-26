@@ -4,6 +4,7 @@ import 'login_page.dart';
 import 'signup_page.dart';
 import '../../services/guest_service.dart';
 import '../../services/auth_service.dart';
+import '../../core/routing/app_router.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
@@ -28,6 +29,8 @@ class _WelcomePageState extends State<WelcomePage> {
       
       if (mounted) {
         if (isLoggedIn || isGuest) {
+          // Ensure router guard allows access
+          AppRouter.setAuthState(true);
           // Navigate to app shell using go_router
           context.go('/home');
         } else {
@@ -62,6 +65,8 @@ class _WelcomePageState extends State<WelcomePage> {
       // Get or create unique guest ID for this device
       final guestId = await GuestService.getOrCreateGuestId();
       await GuestService.startGuestSession();
+      // Allow the router to let guests access protected routes
+      AppRouter.setAuthState(true);
       
       if (context.mounted) {
         Navigator.pop(context); // Remove loading

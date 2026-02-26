@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/auth_service.dart';
+import '../../services/eco_profile_service.dart';
 import '../../services/guest_service.dart';
 import '../profile/eco_profile_setup_page.dart';
 import 'login_page.dart';
@@ -21,7 +23,64 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   bool _acceptTerms = false;
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+
+    final result = await AuthService.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      await GuestService.endGuestSession();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Signed in with Google!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      final hasEcoProfile = await EcoProfileService.hasCompletedSetup();
+      setState(() => _isGoogleLoading = false);
+      if (!mounted) return;
+
+      if (hasEcoProfile) {
+        context.go('/home');
+      } else {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const EcoProfileSetupPage(isFirstTime: true),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      }
+    } else {
+      setState(() => _isGoogleLoading = false);
+      final error = result['error'] ?? 'Google sign-in failed';
+      if (error != 'Sign in cancelled') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -438,7 +497,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                     )),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 0),
                       child: Text(
                         'OR',
                         style: TextStyle(
@@ -453,44 +512,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                // Social Sign Up Buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildSocialButton(
-                      icon: Icons.g_mobiledata,
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Google sign up coming soon!'),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 20),
-                    _buildSocialButton(
-                      icon: Icons.apple,
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Apple sign up coming soon!'),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 20),
-                    _buildSocialButton(
-                      icon: Icons.facebook,
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Facebook sign up coming soon!'),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                // Google Sign Up Button
+                _buildGoogleSignInButton(),
                 const SizedBox(height: 32),
                 // Login Link
                 Row(
@@ -532,20 +555,61 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _buildSocialButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: IconButton(
-        icon: Icon(icon, size: 32, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
-        onPressed: onPressed,
+  Widget _buildGoogleSignInButton() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: _isGoogleLoading ? null : _handleGoogleSignIn,
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF3A3A3A) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDarkMode
+                ? const Color(0xFF555555)
+                : const Color(0xFFDADCE0),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.2 : 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: _isGoogleLoading
+            ? const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppTheme.primaryGreen,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/google_logo.png',
+                    width: 22,
+                    height: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Sign up with Google',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: isDarkMode
+                          ? Colors.white
+                          : const Color(0xFF3C4043),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

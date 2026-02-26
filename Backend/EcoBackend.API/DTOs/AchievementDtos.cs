@@ -46,3 +46,8 @@ public class UpdateUserChallengeDto
 {
     public double CurrentProgress { get; set; }
 }
+
+public class JoinChallengeDto
+{
+    public int Challenge { get; set; }
+}

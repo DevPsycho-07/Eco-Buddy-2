@@ -1,11 +1,11 @@
 {
-    "name": "eco_daily_score",
-    "short_name": "eco_daily_score",
+    "name": "Eco Buddy",
+    "short_name": "Eco Buddy",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Eco Buddy - Track your daily environmental impact",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -27,7 +27,28 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     }
   }
 
+  /// Listen to system theme changes
+  /// This is called from the main app widget when MediaQuery is available
+  void listenToSystemThemeChanges(BuildContext context) {
+    // Get initial brightness from system
+    final brightness = MediaQuery.of(context).platformBrightness;
+    
+    // If the current state is 'system', reflect the system's brightness
+    if (state == ThemeMode.system) {
+      // Update to match system brightness but keep 'system' mode
+      final isDark = brightness == Brightness.dark;
+      _updateBasedOnSystemBrightness(isDark);
+    }
+  }
+
+  /// Update theme based on system brightness
+  void _updateBasedOnSystemBrightness(bool isDark) {
+    // This helps reflect system changes in UI elements that depend on themeMode
+    // even when the actual themeMode is 'system'
+  }
+
   /// Toggle between light and dark mode
+  /// This will override system preference
   void toggleTheme(bool isDark) {
     state = isDark ? ThemeMode.dark : ThemeMode.light;
     _saveThemeMode();

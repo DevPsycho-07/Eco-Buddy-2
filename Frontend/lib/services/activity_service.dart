@@ -23,7 +23,7 @@ class ActivityCategory {
   });
 
   factory ActivityCategory.fromJson(Map<String, dynamic> json) {
-    final typesJson = json['activityTypes'] as List<dynamic>? ?? [];
+    final typesJson = json['activity_types'] as List<dynamic>? ?? [];
     return ActivityCategory(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -64,12 +64,12 @@ class ActivityType {
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       icon: json['icon'] ?? '',
-      co2Impact: (json['co2Impact'] ?? json['cO2Impact'] ?? 0).toDouble(),
-      impactUnit: json['impactUnit'] ?? 'per instance',
-      isEcoFriendly: json['isEcoFriendly'] ?? false,
+      co2Impact: (json['co2_impact'] ?? 0).toDouble(),
+      impactUnit: json['impact_unit'] ?? 'per instance',
+      isEcoFriendly: json['is_eco_friendly'] ?? false,
       points: json['points'] ?? 0,
-      categoryId: json['categoryId'] ?? json['category'],
-      categoryName: json['categoryName'] ?? json['category']?['name'],
+      categoryId: json['category'],
+      categoryName: json['category_name'],
     );
   }
 }
@@ -113,26 +113,23 @@ class Activity {
   });
 
   factory Activity.fromJson(Map<String, dynamic> json) {
-    // .NET returns nested activityType object
-    final activityType = json['activityType'] as Map<String, dynamic>?;
-    final category = activityType?['category'] as Map<String, dynamic>?;
     return Activity(
       id: json['id'] ?? 0,
-      activityTypeId: json['activityTypeId'] ?? json['activity_type'] ?? 0,
-      activityTypeName: activityType?['name'] ?? json['activityTypeName'] ?? '',
-      categoryName: category?['name'] ?? json['categoryName'] ?? '',
+      activityTypeId: json['activity_type'] ?? 0,
+      activityTypeName: json['activity_type_name'] ?? '',
+      categoryName: json['category_name'] ?? '',
       quantity: (json['quantity'] ?? 1).toDouble(),
       unit: json['unit'] ?? '',
       notes: json['notes'] ?? '',
-      co2Impact: (json['co2Impact'] ?? json['cO2Impact'] ?? 0).toDouble(),
-      pointsEarned: json['pointsEarned'] ?? 0,
+      co2Impact: (json['co2_impact'] ?? 0).toDouble(),
+      pointsEarned: json['points_earned'] ?? 0,
       latitude: json['latitude']?.toDouble(),
       longitude: json['longitude']?.toDouble(),
-      locationName: json['locationName'],
-      activityDate: json['activityDate']?.toString().substring(0, 10) ?? '',
-      activityTime: json['activityTime'],
-      isAutoDetected: json['isAutoDetected'] ?? false,
-      createdAt: json['createdAt'] ?? '',
+      locationName: json['location_name'],
+      activityDate: json['activity_date'] ?? '',
+      activityTime: json['activity_time'],
+      isAutoDetected: json['is_auto_detected'] ?? false,
+      createdAt: json['created_at'] ?? '',
     );
   }
 }
@@ -159,13 +156,13 @@ class ActivitySummary {
 
   factory ActivitySummary.fromJson(Map<String, dynamic> json) {
     return ActivitySummary(
-      startDate: json['startDate']?.toString() ?? '',
-      endDate: json['endDate']?.toString() ?? '',
-      totalActivities: json['totalActivities'] ?? 0,
-      totalPoints: json['totalPoints'] ?? 0,
-      totalCo2Saved: (json['totalCO2Saved'] ?? json['totalCo2Saved'] ?? 0).toDouble(),
-      totalCo2Emitted: (json['totalCO2Emitted'] ?? json['totalCo2Emitted'] ?? 0).toDouble(),
-      byCategory: json['byCategory'] ?? {},
+      startDate: json['start_date']?.toString() ?? '',
+      endDate: json['end_date']?.toString() ?? '',
+      totalActivities: json['total_activities'] ?? 0,
+      totalPoints: json['total_points'] ?? 0,
+      totalCo2Saved: (json['total_co2_saved'] ?? 0).toDouble(),
+      totalCo2Emitted: (json['total_co2_emitted'] ?? 0).toDouble(),
+      byCategory: json['by_category'] ?? {},
     );
   }
 }
@@ -191,11 +188,11 @@ class Tip {
   factory Tip.fromJson(Map<String, dynamic> json) {
     return Tip(
       id: json['id'] ?? 0,
-      categoryId: json['categoryId'] ?? json['category'],
-      categoryName: json['categoryName'],
+      categoryId: json['category'],
+      categoryName: json['category_name'],
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      impactDescription: json['impactDescription'] ?? '',
+      impactDescription: json['impact_description'] ?? '',
     );
   }
 }
@@ -206,7 +203,7 @@ class ActivityService {
 
   /// Get all activity categories with their types
   static Future<List<ActivityCategory>> getCategories() async {
-    final url = Uri.parse('$_baseUrl/categories');
+    final url = Uri.parse('$_baseUrl/categories/');
 
     try {
       final response = await ApiClient.get(url);
@@ -239,9 +236,9 @@ class ActivityService {
 
   /// Get activity types, optionally filtered by category
   static Future<List<ActivityType>> getActivityTypes({int? categoryId}) async {
-    var url = Uri.parse('$_baseUrl/types');
+    var url = Uri.parse('$_baseUrl/types/');
     if (categoryId != null) {
-      url = Uri.parse('$_baseUrl/types?category=$categoryId');
+      url = Uri.parse('$_baseUrl/types/?category=$categoryId');
     }
 
     try {
@@ -286,13 +283,14 @@ class ActivityService {
     String? activityTime,
     bool isAutoDetected = false,
   }) async {
-    final url = Uri.parse(_baseUrl);
+    final url = Uri.parse('$_baseUrl/log/');
 
     try {
       final body = {
-        'activityTypeId': activityTypeId,
+        'activity_type': activityTypeId,
         'quantity': quantity,
-        'activityDate': activityDate,
+        'activity_date': activityDate,
+        'is_auto_detected': isAutoDetected,
       };
 
       if (unit != null && unit.isNotEmpty) body['unit'] = unit;
@@ -300,10 +298,10 @@ class ActivityService {
       if (latitude != null) body['latitude'] = latitude;
       if (longitude != null) body['longitude'] = longitude;
       if (locationName != null && locationName.isNotEmpty) {
-        body['locationName'] = locationName;
+        body['location_name'] = locationName;
       }
       if (activityTime != null && activityTime.isNotEmpty) {
-        body['activityTime'] = activityTime;
+        body['activity_time'] = activityTime;
       }
 
       final response = await ApiClient.post(url, body: jsonEncode(body));
@@ -341,7 +339,7 @@ class ActivityService {
 
   /// Get today's activities
   static Future<List<Activity>> getTodayActivities() async {
-    final url = Uri.parse('$_baseUrl/log/today');
+    final url = Uri.parse('$_baseUrl/log/today/');
 
     try {
       final response = await ApiClient.get(url);
@@ -372,7 +370,7 @@ class ActivityService {
 
   /// Get activity summary for a date range
   static Future<ActivitySummary> getSummary({int days = 7}) async {
-    final url = Uri.parse('$_baseUrl/log/summary?days=$days');
+    final url = Uri.parse('$_baseUrl/log/summary/?days=$days');
 
     try {
       final response = await ApiClient.get(url);
@@ -403,7 +401,7 @@ class ActivityService {
 
   /// Get activity history grouped by date
   static Future<Map<String, List<Activity>>> getHistory({int days = 30}) async {
-    final url = Uri.parse('$_baseUrl/log/history?days=$days');
+    final url = Uri.parse('$_baseUrl/log/history/?days=$days');
 
     try {
       final response = await ApiClient.get(url);
@@ -441,7 +439,7 @@ class ActivityService {
 
   /// Get daily tip
   static Future<Tip?> getDailyTip() async {
-    final url = Uri.parse('$_baseUrl/tips/daily');
+    final url = Uri.parse('$_baseUrl/tips/daily/');
 
     try {
       final response = await ApiClient.get(url);
@@ -466,7 +464,7 @@ class ActivityService {
 
   /// Delete an activity
   static Future<void> deleteActivity(int activityId) async {
-    final url = Uri.parse('$_baseUrl/$activityId');
+    final url = Uri.parse('$_baseUrl/log/$activityId/');
 
     try {
       final response = await ApiClient.delete(url);
@@ -508,7 +506,7 @@ class ActivityService {
       }
 
       final response = await ApiClient.get(
-        Uri.parse('${ApiConfig.baseUrl}/activities?search=$query'),
+        Uri.parse('${ApiConfig.baseUrl}/activities/activities/?search=$query'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

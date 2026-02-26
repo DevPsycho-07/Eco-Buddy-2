@@ -15,11 +15,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:app_links/app_links.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/di/service_locator.dart';
-import 'core/storage/offline_storage.dart';
 import 'core/utils/app_logger.dart';
 import 'core/widgets/permission_request_widget.dart';
 import 'services/fcm_service.dart';
@@ -32,6 +32,10 @@ void main() async {
 
   AppLogger.info('🚀 Starting Eco Daily Score app...');
 
+  // Load environment variables from .env file
+  await dotenv.load(fileName: '.env');
+  AppLogger.info('✓ Environment variables loaded');
+
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -40,14 +44,9 @@ void main() async {
 
   // Initialize dependencies
   try {
-    // Setup service locator (dependency injection)
+    // Setup service locator (dependency injection) - includes OfflineStorage init
     await setupServiceLocator();
-    AppLogger.info('✓ Service locator initialized');
-
-    // Initialize offline storage
-    final offlineStorage = OfflineStorage();
-    await offlineStorage.init();
-    AppLogger.info('✓ Offline storage initialized');
+    AppLogger.info('✓ Service locator & offline storage initialized');
 
     // Check authentication state and update router
     final isLoggedIn = await AuthService.isLoggedIn();
@@ -71,8 +70,8 @@ void main() async {
       (uri) {
         AppLogger.info('🔗 Deep link received: $uri');
         // Convert deep link to GoRouter path
-        // eco-daily-score://reset-password?token=...&email=... → /reset-password?token=...&email=...
-        // eco-daily-score://verify-email?token=...&email=... → /verify-email?token=...&email=...
+        // eco-buddy-dotnet://reset-password?token=...&email=... → /reset-password?token=...&email=...
+        // eco-buddy-dotnet://verify-email?token=...&email=... → /verify-email?token=...&email=...
         final path = '/${uri.host}${uri.hasQuery ? '?${uri.query}' : ''}';
         AppLogger.info('🔗 Navigating to: $path');
         AppRouter.router.push(path);

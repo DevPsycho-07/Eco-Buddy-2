@@ -1,6 +1,8 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../core/routing/app_router.dart';
 import '../core/config/api_config.dart';
 import '../core/utils/app_logger.dart';
@@ -21,7 +23,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/users/login'),
+        Uri.parse('$baseUrl/users/login/'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -33,8 +35,8 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final accessToken = data['accessToken'] ?? data['access'];
-        final refreshToken = data['refreshToken'] ?? data['refresh'];
+        final accessToken = data['access'];
+        final refreshToken = data['refresh'];
         
         if (accessToken != null && refreshToken != null) {
           // Store tokens securely
@@ -46,8 +48,9 @@ class AuthService {
           final expiryTime = DateTime.now().add(const Duration(hours: 24)).toIso8601String();
           await _storage.write(key: _tokenExpiryKey, value: expiryTime);
           
-          // Update router auth state
-          AppRouter.updateAuthState(true);
+          // Set auth state without refresh so login page can check
+          // eco profile before router redirect fires
+          AppRouter.setAuthState(true);
           
           // Register device token with backend after successful login (fire and forget)
           try {
@@ -62,7 +65,7 @@ class AuthService {
             'access': accessToken,
             'refresh': refreshToken,
             'user': data['user'],
-            'email_verified': data['user']?['emailVerified'] ?? true,
+            'email_verified': data['email_verified'] ?? false,
           };
         } else {
           throw Exception('No tokens received from server');
@@ -89,7 +92,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/users/register'),
+        Uri.parse('$baseUrl/users/register/'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -97,14 +100,14 @@ class AuthService {
           'username': username,
           'email': email,
           'password': password,
-          'fullName': username,
+          'password_confirm': passwordConfirm,
         }),
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final accessToken = data['accessToken'] ?? data['access'];
-        final refreshToken = data['refreshToken'] ?? data['refresh'];
+        final accessToken = data['access'];
+        final refreshToken = data['refresh'];
         
         if (accessToken != null && refreshToken != null) {
           // Store tokens securely
@@ -116,8 +119,9 @@ class AuthService {
           final expiryTime = DateTime.now().add(const Duration(hours: 24)).toIso8601String();
           await _storage.write(key: _tokenExpiryKey, value: expiryTime);
           
-          // Update router auth state
-          AppRouter.updateAuthState(true);
+          // Set auth state without refresh so signup page can check
+          // eco profile before router redirect fires
+          AppRouter.setAuthState(true);
           
           return {
             'success': true,
@@ -199,28 +203,22 @@ class AuthService {
       }
 
       final response = await http.post(
-        Uri.parse('$baseUrl/users/token/refresh'),
+        Uri.parse('$baseUrl/users/token/refresh/'),
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'refreshToken': refreshTokenValue,
+          'refresh': refreshTokenValue,
         }),
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final newAccessToken = data['accessToken'] ?? data['access'];
-        final newRefreshToken = data['refreshToken'] ?? data['refresh'];
+        final newAccessToken = data['access'];
         
         if (newAccessToken != null) {
           // Update access token
           await _storage.write(key: _accessTokenKey, value: newAccessToken);
-          
-          // Update refresh token (token rotation - backend issues new refresh token)
-          if (newRefreshToken != null) {
-            await _storage.write(key: _refreshTokenKey, value: newRefreshToken);
-          }
           
           // Update expiry time (assuming 24 hours from now)
           final expiryTime = DateTime.now().add(const Duration(hours: 24)).toIso8601String();
@@ -267,13 +265,13 @@ class AuthService {
           final accessToken = await _storage.read(key: _accessTokenKey);
           AppLogger.info('📤 Calling backend logout endpoint...');
           await http.post(
-            Uri.parse('$baseUrl/users/logout'),
+            Uri.parse('$baseUrl/users/logout/'),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
             },
             body: jsonEncode({
-              'refreshToken': refreshTokenValue,
+              'refresh': refreshTokenValue,
             }),
           ).timeout(const Duration(seconds: 5));
           AppLogger.info('✅ Backend logout successful');
@@ -305,5 +303,95 @@ class AuthService {
   static Future<bool> isLoggedIn() async {
     final token = await getToken();
     return token != null;
+  }
+
+  // Sign in with Google
+  static Future<Map<String, dynamic>> signInWithGoogle() async {
+    try {
+      final clientId = dotenv.env['GOOGLE_CLIENT_ID'];
+      AppLogger.info('🔑 Google Sign-In: serverClientId = $clientId');
+
+      final googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        // Required to get an ID token — must be the Web Client ID from Firebase
+        serverClientId: clientId,
+      );
+
+      // Sign out first to force account picker
+      AppLogger.info('🔄 Google Sign-In: signing out previous session...');
+      await googleSignIn.signOut();
+
+      AppLogger.info('👤 Google Sign-In: showing account picker...');
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        AppLogger.warning('⚠️ Google Sign-In: user cancelled');
+        return {'success': false, 'error': 'Sign in cancelled'};
+      }
+
+      AppLogger.info('✅ Google Sign-In: got user → ${googleUser.email}');
+      AppLogger.info('🔐 Google Sign-In: requesting authentication tokens...');
+
+      final googleAuth = await googleUser.authentication;
+      AppLogger.info('🪙 Google Sign-In: accessToken = ${googleAuth.accessToken != null ? "present" : "NULL"}');
+      AppLogger.info('🪙 Google Sign-In: idToken    = ${googleAuth.idToken != null ? "present (${googleAuth.idToken!.substring(0, 20)}...)" : "NULL"}');
+
+      final idTokenStr = googleAuth.idToken;
+      if (idTokenStr == null) {
+        AppLogger.error('❌ Google Sign-In: idToken is null — serverClientId may be wrong or missing');
+        return {'success': false, 'error': 'Failed to get ID token from Google'};
+      }
+
+      AppLogger.info('📤 Google Sign-In: sending ID token to backend...');
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/google/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id_token': idTokenStr}),
+      ).timeout(const Duration(seconds: 15));
+
+      AppLogger.info('📥 Google Sign-In: backend response status = ${response.statusCode}');
+      AppLogger.info('📥 Google Sign-In: backend response body = ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final accessToken = data['access'];
+        final refreshToken = data['refresh'];
+
+        if (accessToken != null && refreshToken != null) {
+          await _storage.write(key: _accessTokenKey, value: accessToken);
+          await _storage.write(key: _refreshTokenKey, value: refreshToken);
+          await _storage.write(key: _userKey, value: jsonEncode(data['user']));
+          final expiryTime = DateTime.now().add(const Duration(hours: 24)).toIso8601String();
+          await _storage.write(key: _tokenExpiryKey, value: expiryTime);
+
+          // Set auth state without refresh so login page can check
+          // eco profile before router redirect fires
+          AppRouter.setAuthState(true);
+          AppLogger.info('🎉 Google Sign-In: success! User = ${data['user']['email']}');
+
+          try {
+            await FCMService.registerDeviceToken();
+          } catch (e) {
+            AppLogger.warning('⚠️ Failed to register device token after Google sign-in: $e');
+          }
+
+          return {
+            'success': true,
+            'access': accessToken,
+            'refresh': refreshToken,
+            'user': data['user'],
+            'email_verified': data['email_verified'] ?? true,
+          };
+        } else {
+          throw Exception('No tokens received from server');
+        }
+      } else {
+        final errorData = jsonDecode(response.body);
+        AppLogger.error('❌ Google Sign-In: backend error = ${response.body}');
+        throw Exception(errorData['error'] ?? 'Google sign-in failed');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Google Sign-In: exception = $e');
+      return {'success': false, 'error': e.toString()};
+    }
   }
 }

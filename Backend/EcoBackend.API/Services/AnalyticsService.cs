@@ -96,6 +96,8 @@ public class AnalyticsService
         };
 
         var activities = await _context.Activities
+            .Include(a => a.ActivityType)
+            .ThenInclude(at => at!.Category)
             .Where(a => a.UserId == userId && a.ActivityDate >= startDate.Date)
             .ToListAsync();
 
@@ -104,61 +106,78 @@ public class AnalyticsService
         var totalCO2Saved = Math.Abs(activities.Where(a => a.CO2Impact < 0).Sum(a => a.CO2Impact));
         var totalCO2Emitted = activities.Where(a => a.CO2Impact > 0).Sum(a => a.CO2Impact);
 
+        // Build by_category breakdown
+        var byCategory = activities
+            .GroupBy(a => a.ActivityType?.Category?.Name ?? "Other")
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    count = g.Count(),
+                    co2Impact = g.Sum(a => a.CO2Impact),
+                    percentage = totalActivities > 0 ? Math.Round(g.Count() / (double)totalActivities * 100, 1) : 0
+                });
+
+        // Build daily trend
+        var trend = activities
+            .GroupBy(a => a.ActivityDate.ToString("yyyy-MM-dd"))
+            .OrderBy(g => g.Key)
+            .Select(g => new
+            {
+                date = g.Key,
+                co2Impact = g.Sum(a => a.CO2Impact),
+                activities = g.Count()
+            })
+            .ToList();
+
         return new
         {
             period,
-            startDate,
-            endDate = now,
+            startDate = startDate.ToString("yyyy-MM-dd"),
+            endDate = now.ToString("yyyy-MM-dd"),
             totalActivities,
             totalPoints,
-            totalCO2Saved,
-            totalCO2Emitted,
-            netCO2Impact = totalCO2Emitted - totalCO2Saved
+            totalCO2Saved = totalCO2Saved,
+            totalCO2Emitted = totalCO2Emitted,
+            netImpact = totalCO2Emitted - totalCO2Saved,
+            byCategory,
+            trend
         };
     }
 
     public async Task<object> GetComparisonAsync(int userId)
     {
-        var now = DateTime.UtcNow;
+        // Get user's data
+        var user = await _context.Users.FindAsync(userId);
+        var userEcoScore = user?.EcoScore ?? 0;
+        var userCO2Saved = user?.TotalCO2Saved ?? 0;
 
-        var thisWeekStart = now.AddDays(-7);
-        var lastWeekStart = now.AddDays(-14);
+        // Get average stats across all users
+        var allUsers = await _context.Users.ToListAsync();
+        var avgEcoScore = allUsers.Any() ? allUsers.Average(u => u.EcoScore) : 0;
+        var avgCO2Saved = allUsers.Any() ? allUsers.Average(u => u.TotalCO2Saved) : 0;
 
-        var thisWeekActivities = await _context.Activities
-            .Where(a => a.UserId == userId && a.ActivityDate >= thisWeekStart.Date)
-            .ToListAsync();
-
-        var lastWeekActivities = await _context.Activities
-            .Where(a => a.UserId == userId && a.ActivityDate >= lastWeekStart.Date && a.ActivityDate < thisWeekStart.Date)
-            .ToListAsync();
-
-        var thisWeekPoints = thisWeekActivities.Sum(a => a.PointsEarned);
-        var lastWeekPoints = lastWeekActivities.Sum(a => a.PointsEarned);
-        var pointsChange = lastWeekPoints > 0 ? ((thisWeekPoints - lastWeekPoints) / (double)lastWeekPoints * 100) : 0;
-
-        var thisWeekCO2 = Math.Abs(thisWeekActivities.Where(a => a.CO2Impact < 0).Sum(a => a.CO2Impact));
-        var lastWeekCO2 = Math.Abs(lastWeekActivities.Where(a => a.CO2Impact < 0).Sum(a => a.CO2Impact));
-        var co2Change = lastWeekCO2 > 0 ? ((thisWeekCO2 - lastWeekCO2) / lastWeekCO2 * 100) : 0;
+        // Calculate percentile
+        var usersBelow = allUsers.Count(u => u.EcoScore < userEcoScore);
+        var percentile = allUsers.Count > 0 ? Math.Round(usersBelow / (double)allUsers.Count * 100, 1) : 50;
 
         return new
         {
-            thisWeek = new
+            user = new
             {
-                activities = thisWeekActivities.Count,
-                points = thisWeekPoints,
-                co2Saved = thisWeekCO2
+                ecoScore = userEcoScore,
+                totalCO2Saved = userCO2Saved
             },
-            lastWeek = new
+            average = new
             {
-                activities = lastWeekActivities.Count,
-                points = lastWeekPoints,
-                co2Saved = lastWeekCO2
+                ecoScore = avgEcoScore,
+                totalCO2Saved = avgCO2Saved
             },
-            changes = new
+            percentile,
+            comparison = new
             {
-                activitiesChange = lastWeekActivities.Count > 0 ? ((thisWeekActivities.Count - lastWeekActivities.Count) / (double)lastWeekActivities.Count * 100) : 0,
-                pointsChange,
-                co2Change
+                scoreDiff = userEcoScore - avgEcoScore,
+                co2Diff = userCO2Saved - avgCO2Saved
             }
         };
     }

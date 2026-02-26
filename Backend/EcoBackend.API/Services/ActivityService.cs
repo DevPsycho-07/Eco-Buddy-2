@@ -152,14 +152,14 @@ public class ActivityService
 
     public async Task<ActivityDto> CreateActivityAsync(int userId, ActivityCreateDto dto)
     {
-        var activityType = await _context.ActivityTypes.FindAsync(dto.ActivityTypeId);
+        var activityType = await _context.ActivityTypes.FindAsync(dto.ActivityType);
         if (activityType == null)
             throw new ArgumentException("Invalid activity type");
 
         var activity = new Activity
         {
             UserId = userId,
-            ActivityTypeId = dto.ActivityTypeId,
+            ActivityTypeId = dto.ActivityType,
             Quantity = dto.Quantity,
             Unit = dto.Unit ?? "",
             Notes = dto.Notes ?? "",

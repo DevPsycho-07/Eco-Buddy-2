@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/activity_service.dart';
 
 class TipsPage extends StatefulWidget {
   const TipsPage({super.key});
@@ -9,6 +11,204 @@ class TipsPage extends StatefulWidget {
 
 class _TipsPageState extends State<TipsPage> {
   String _selectedCategory = 'All';
+  bool _isLoading = true;
+  dynamic _dailyTip;
+  String? _errorMessage;
+  Set<String> _savedTips = {};
+  late SharedPreferences _prefs;
+  
+  @override
+  void initState() {
+    super.initState();
+    _initPreferences();
+    _loadDailyTip();
+  }
+
+  Future<void> _initPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+    final saved = _prefs.getStringList('saved_tips') ?? [];
+    setState(() {
+      _savedTips = saved.toSet();
+    });
+  }
+
+  Future<void> _toggleSaveTip(String tipTitle) async {
+    setState(() {
+      if (_savedTips.contains(tipTitle)) {
+        _savedTips.remove(tipTitle);
+      } else {
+        _savedTips.add(tipTitle);
+      }
+    });
+    await _prefs.setStringList('saved_tips', _savedTips.toList());
+  }
+
+  void _showSavedTips() {
+    final savedTipsList = _tips.where((tip) => _savedTips.contains(tip['title'])).toList();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Saved Tips (${_savedTips.length})',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              if (savedTipsList.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.bookmark_border,
+                          size: 64,
+                          color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No saved tips yet',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: savedTipsList.length,
+                    itemBuilder: (context, index) {
+                      final tip = savedTipsList[index];
+                      return Dismissible(
+                        key: Key(tip['title']),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 16),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        onDismissed: (direction) async {
+                          await _toggleSaveTip(tip['title']);
+                          if (!mounted) return;
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Tip removed from saved')),
+                            );
+                          }
+                        },
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(12),
+                            leading: Text(
+                              tip['emoji'],
+                              style: const TextStyle(fontSize: 28),
+                            ),
+                            title: Text(
+                              tip['title'],
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 8),
+                                Text(
+                                  tip['description'],
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: tip['impact'] == 'High'
+                                            ? Colors.green.withValues(alpha: 0.2)
+                                            : tip['impact'] == 'Medium'
+                                                ? Colors.orange.withValues(alpha: 0.2)
+                                                : Colors.yellow.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        tip['impact'],
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: tip['impact'] == 'High'
+                                              ? Colors.green
+                                              : tip['impact'] == 'Medium'
+                                                  ? Colors.orange
+                                                  : Colors.yellow[700],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadDailyTip() async {
+    try {
+      final tip = await ActivityService.getDailyTip();
+      setState(() {
+        _dailyTip = tip;
+        _isLoading = false;
+      });
+      // Daily tip loaded successfully
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load daily tip: $e';
+        _isLoading = false;
+      });
+      // Failed to load daily tip
+    }
+  }
   
   final List<Map<String, dynamic>> _tips = [
     // Transport Tips
@@ -54,64 +254,139 @@ class _TipsPageState extends State<TipsPage> {
         title: const Text('Tips & Suggestions'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_outline),
-            onPressed: () {},
-            tooltip: 'Saved Tips',
+            icon: Stack(
+              children: [
+                const Icon(Icons.bookmark),
+                if (_savedTips.isNotEmpty)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        '${_savedTips.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            onPressed: () => _showSavedTips(),
+            tooltip: 'Saved Tips (${_savedTips.length})',
           ),
         ],
       ),
       body: Column(
         children: [
           // Personalized Recommendation Banner
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green[400]!, Colors.teal[500]!],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
+          _isLoading
+              ? Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      colors: [Colors.green[400]!, Colors.teal[500]!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Text('💡', style: TextStyle(fontSize: 24)),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Personalized for You',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Based on your transport habits, try carpooling this week!',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
+                  child: const Center(
+                    child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
                   ),
-                ),
-                const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-              ],
-            ),
-          ),
+                )
+              : _errorMessage != null
+                  ? Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.red[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red[400]),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(color: Colors.red[700]),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: () {
+                              setState(() => _isLoading = true);
+                              _loadDailyTip();
+                            },
+                          ),
+                        ],
+                      ),
+                    )
+                  : _dailyTip != null
+                      ? Container(
+                          margin: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.green[400]!, Colors.teal[500]!],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text('💡', style: TextStyle(fontSize: 24)),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Today\'s Eco Tip',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _dailyTip?.title ?? 'No tip available',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: 13,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink(),
 
           // Category Filter
           SizedBox(
@@ -130,7 +405,7 @@ class _TipsPageState extends State<TipsPage> {
                     selected: isSelected,
                     selectedColor: Colors.green,
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey[700],
+                      color: isSelected ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                     onSelected: (selected) {
@@ -146,19 +421,9 @@ class _TipsPageState extends State<TipsPage> {
           // Tips Count
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Text(
-                  '${filteredTips.length} tips available',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.shuffle, size: 18),
-                  label: const Text('Random Tip'),
-                ),
-              ],
+            child: Text(
+              '${filteredTips.length} tips available',
+              style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 13),
             ),
           ),
 
@@ -223,8 +488,12 @@ class _TipsPageState extends State<TipsPage> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.bookmark_border, size: 22),
-                    onPressed: () {},
+                    icon: Icon(
+                      _savedTips.contains(tip['title']) ? Icons.bookmark : Icons.bookmark_border,
+                      size: 22,
+                      color: _savedTips.contains(tip['title']) ? Colors.orange : null,
+                    ),
+                    onPressed: () => _toggleSaveTip(tip['title']),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -234,7 +503,7 @@ class _TipsPageState extends State<TipsPage> {
               Text(
                 tip['description'],
                 style: TextStyle(
-                  color: Colors.grey[700],
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
                   fontSize: 13,
                   height: 1.4,
                 ),
@@ -299,7 +568,7 @@ class _TipsPageState extends State<TipsPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: Theme.of(context).dividerColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -335,7 +604,7 @@ class _TipsPageState extends State<TipsPage> {
                 tip['description'],
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[700],
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
                   height: 1.5,
                 ),
               ),
@@ -347,16 +616,32 @@ class _TipsPageState extends State<TipsPage> {
               const SizedBox(height: 8),
               Text(
                 'Small actions add up! If everyone adopted this tip, we could significantly reduce global carbon emissions and create a healthier planet for future generations.',
-                style: TextStyle(color: Colors.grey[600], height: 1.4),
+                style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, height: 1.4),
               ),
               const SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.bookmark_border),
-                      label: const Text('Save'),
+                      onPressed: () {
+                        _toggleSaveTip(tip['title']);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _savedTips.contains(tip['title']) 
+                                ? 'Removed from saved tips' 
+                                : 'Added to saved tips',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        _savedTips.contains(tip['title']) ? Icons.bookmark : Icons.bookmark_border,
+                      ),
+                      label: Text(
+                        _savedTips.contains(tip['title']) ? 'Saved' : 'Save',
+                      ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.all(14),
                       ),

@@ -145,4 +145,28 @@ public class ActivitiesController : ControllerBase
         if (!deleted) return NotFound();
         return NoContent();
     }
+
+    // Alternative POST route for frontend compatibility (POST /api/activities/log/)
+    [HttpPost("log")]
+    public Task<IActionResult> CreateActivityAlt([FromBody] ActivityCreateDto dto) => CreateActivity(dto);
+
+    // Search route for frontend compatibility (GET /api/activities/activities/?search=)
+    [HttpGet("activities")]
+    public async Task<IActionResult> SearchActivities([FromQuery] string? search)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var activities = await _activityService.GetActivitiesAsync(userId, null, null, null);
+        if (!string.IsNullOrEmpty(search))
+        {
+            activities = activities.Where(a => 
+                (a.ActivityType?.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.Notes?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+        }
+        return Ok(activities);
+    }
+
+    // Alternative route: DELETE /api/activities/log/{id}
+    [HttpDelete("log/{id}")]
+    public Task<IActionResult> DeleteActivityAlt(int id) => DeleteActivity(id);
 }

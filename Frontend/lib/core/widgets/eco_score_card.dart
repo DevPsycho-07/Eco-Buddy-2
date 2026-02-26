@@ -2,12 +2,46 @@ import 'package:flutter/material.dart';
 
 class EcoScoreCard extends StatelessWidget {
   final int score;
-  final int trend;
+  final double? predictedScore;
+  final String? scoreCategory;
+  final bool isPredictionLoading;
+  final bool hasLoggedToday;
 
-  const EcoScoreCard({super.key, required this.score, required this.trend});
+  const EcoScoreCard({
+    super.key,
+    required this.score,
+    this.predictedScore,
+    this.scoreCategory,
+    this.isPredictionLoading = false,
+    this.hasLoggedToday = false,
+  });
+
+  String _getScoreMessage() {
+    // If we have a predicted score, use that; otherwise use activity points
+    final double displayScore = predictedScore ?? score.toDouble();
+    
+    if (displayScore >= 80) {
+      return '🌟 Excellent! Keep it up!';
+    } else if (displayScore >= 60) {
+      return '✅ Good work! Keep going!';
+    } else if (displayScore >= 40) {
+      return '⚠️ Room for improvement';
+    } else if (displayScore >= 20) {
+      return '📉 Try logging eco activities';
+    } else {
+      return '🔴 Start your eco journey';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Use predicted score in the circle if available, otherwise fall back to activity points
+    final double circleValue =
+        predictedScore != null ? predictedScore! / 100 : score / 100;
+    final String circleLabel =
+        predictedScore != null ? predictedScore!.toStringAsFixed(0) : '$score';
+    final String circleSub = scoreCategory ?? 'Points';
+
     return Card(
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -21,35 +55,48 @@ class EcoScoreCard extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // Circular progress indicator — shows predicted score
             Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
                   width: 100,
                   height: 100,
-                  child: CircularProgressIndicator(
-                    value: score / 100,
-                    strokeWidth: 10,
-                    backgroundColor: Colors.white.withValues(alpha: 0.3),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
+                  child: isPredictionLoading
+                      ? CircularProgressIndicator(
+                          strokeWidth: 10,
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.white),
+                        )
+                      : CircularProgressIndicator(
+                          value: circleValue.clamp(0.0, 1.0),
+                          strokeWidth: 10,
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.white),
+                        ),
                 ),
-                Column(
-                  children: [
-                    Text(
-                      '$score',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                if (!isPredictionLoading)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        circleLabel,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    const Text(
-                      'Points',
-                      style: TextStyle(fontSize: 10, color: Colors.white70),
-                    ),
-                  ],
-                ),
+                      Text(
+                        circleSub,
+                        style: const TextStyle(
+                            fontSize: 10, color: Colors.white70),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
               ],
             ),
             const SizedBox(width: 20),
@@ -58,50 +105,33 @@ class EcoScoreCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Today\'s Score',
+                    'Predicted Score',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        trend > 0 
-                            ? Icons.trending_up 
-                            : trend < 0 
-                                ? Icons.trending_down 
-                                : Icons.trending_flat,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          trend == 0 
-                              ? 'No change from yesterday'
-                              : '${trend > 0 ? '+' : ''}$trend% from yesterday',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+                  if (predictedScore != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      hasLoggedToday
+                          ? '📊 Based on today\'s activities + profile'
+                          : '⚠️ Log activities for accurate score',
+                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      '🌟 Great progress!',
-                      style: TextStyle(color: Colors.white),
+                    child: Text(
+                      _getScoreMessage(),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ],

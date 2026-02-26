@@ -30,6 +30,7 @@ import '../../services/guest_service.dart';
 import '../network/dio_client.dart';
 import '../network/cache_manager.dart';
 import '../network/connectivity_service.dart';
+import '../storage/offline_storage.dart';
 import '../utils/app_logger.dart';
 
 /// Global service locator instance
@@ -44,6 +45,11 @@ final sl = GetIt.instance;
 /// ```
 Future<void> setupServiceLocator() async {
   AppLogger.info('Setting up service locator...');
+
+  // Initialize offline storage first (needed by other services)
+  final offlineStorage = OfflineStorage();
+  await offlineStorage.init();
+  sl.registerSingleton<OfflineStorage>(offlineStorage);
 
   // External dependencies
   sl.registerLazySingleton<FlutterSecureStorage>(

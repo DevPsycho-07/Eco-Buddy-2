@@ -6,6 +6,7 @@ import '../../services/http_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/eco_profile_service.dart';
 import '../../services/secure_profile_picture_service.dart';
+import '../../services/permission_service.dart';
 import '../../core/config/api_config.dart';
 import '../../core/widgets/secure_profile_picture_avatar.dart';
 import 'eco_profile_setup_page.dart';
@@ -33,8 +34,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _firstNameController = TextEditingController(text: widget.profileData['firstName'] ?? '');
-    _lastNameController = TextEditingController(text: widget.profileData['lastName'] ?? '');
+    _firstNameController = TextEditingController(text: widget.profileData['first_name'] ?? '');
+    _lastNameController = TextEditingController(text: widget.profileData['last_name'] ?? '');
     _usernameController = TextEditingController(text: widget.profileData['username'] ?? '');
     _bioController = TextEditingController(text: widget.profileData['bio'] ?? '');
   }
@@ -50,6 +51,85 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      // Always request permission - Android will decide whether to show dialog or auto-grant
+      // This respects "Ask every time" setting
+      bool permissionGranted = false;
+      
+      if (source == ImageSource.camera) {
+        // Request camera permission (don't check status first)
+        permissionGranted = await PermissionService.requestCameraPermission(
+          onGranted: () {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('📷 Camera access granted'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            }
+          },
+          onDenied: () {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('❌ Camera access is required to take photos'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+        );
+      } else {
+        // Request photos/storage permission for gallery (don't check status first)
+        permissionGranted = await PermissionService.requestPhotosPermission(
+          onGranted: () {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🖼️ Gallery access granted'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            }
+          },
+          onDenied: () {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('❌ Gallery access is required to select photos'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+        );
+      }
+      
+      // If permission denied, show error and don't proceed
+      if (!permissionGranted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(source == ImageSource.camera 
+                ? '❌ Camera permission is required. Please enable it in app settings.'
+                : '❌ Gallery permission is required. Please enable it in app settings.'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Settings',
+                textColor: Colors.white,
+                onPressed: () {
+                  PermissionService.openNotificationSettings();
+                },
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Only open camera/gallery if permission is explicitly granted
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: 1024,
@@ -102,7 +182,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   _pickImage(ImageSource.camera);
                 },
               ),
-              if (_selectedImage != null || widget.profileData['profilePicture'] != null)
+              if (_selectedImage != null || widget.profileData['profile_picture'] != null)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('Remove Photo'),
@@ -138,10 +218,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       
                       try {
                         // Delete from server if exists
-                        if (widget.profileData['profilePicture'] != null) {
+                        if (widget.profileData['profile_picture'] != null) {
                           await SecureProfilePictureService.deleteProfilePicture();
                           // Update the profile data to reflect removal
-                          widget.profileData['profilePicture'] = null;
+                          widget.profileData['profile_picture'] = null;
                         }
                         
                         setState(() {
@@ -221,12 +301,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
       
       // Update profile data
-      final response = await ApiClient.put(
-        Uri.parse('$baseUrl/users/profile'),
+      final response = await ApiClient.patch(
+        Uri.parse('$baseUrl/users/profile/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'firstName': _firstNameController.text.trim(),
-          'lastName': _lastNameController.text.trim(),
+          'first_name': _firstNameController.text.trim(),
+          'last_name': _lastNameController.text.trim(),
           'username': _usernameController.text.trim(),
           'bio': _bioController.text.trim(),
         }),
@@ -295,7 +375,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             backgroundImage: FileImage(_selectedImage!),
                           )
                         : SecureProfilePictureAvatar(
-                            key: ValueKey(widget.profileData['profilePicture']),
+                            key: ValueKey(widget.profileData['profile_picture']),
                             radius: 50,
                             backgroundColor: Colors.green[100],
                             placeholder: CircleAvatar(
@@ -337,7 +417,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               Center(
                 child: TextButton(
                   onPressed: _showImageSourceDialog,
-                  child: Text(_selectedImage != null || widget.profileData['profilePicture'] != null
+                  child: Text(_selectedImage != null || widget.profileData['profile_picture'] != null
                       ? 'Change Photo'
                       : 'Add Photo'),
                 ),

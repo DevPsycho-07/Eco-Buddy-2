@@ -18,81 +18,182 @@ public class PredictionsController : ControllerBase
         _predictionService = predictionService;
     }
 
+    private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    // ==================== Profile ====================
+
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var profile = await _predictionService.GetProfileAsync(userId);
+        var profile = await _predictionService.GetProfileAsync(GetUserId());
         return Ok(profile);
     }
 
     [HttpPost("profile")]
     public async Task<IActionResult> CreateOrUpdateProfile([FromBody] UserEcoProfileDto profileDto)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        await _predictionService.CreateOrUpdateProfileAsync(userId, profileDto);
+        await _predictionService.CreateOrUpdateProfileAsync(GetUserId(), profileDto);
         return Ok(new { message = "Profile updated successfully" });
     }
+
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UserEcoProfileDto profileDto)
+    {
+        await _predictionService.CreateOrUpdateProfileAsync(GetUserId(), profileDto);
+        return Ok(new { message = "Profile updated successfully" });
+    }
+
+    // ==================== Daily Logs ====================
 
     [HttpGet("daily-logs")]
     public async Task<IActionResult> GetDailyLogs([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var logs = await _predictionService.GetDailyLogsAsync(userId, startDate, endDate);
+        var logs = await _predictionService.GetDailyLogsAsync(GetUserId(), startDate, endDate);
         return Ok(logs);
     }
 
-    // Prediction stub endpoints - feature coming soon
-
-    [HttpPost("predict")]
-    public IActionResult Predict([FromBody] object data)
-        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
-
-    [HttpPost("predict/quick")]
-    public IActionResult QuickPredict([FromBody] object data)
-        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
-
-    [HttpGet("history")]
-    public IActionResult GetPredictionHistory()
-        => Ok(new { message = "Feature coming soon", status = "not_implemented", data = new List<object>() });
-
-    [HttpPost("trips")]
-    public IActionResult PredictTrips([FromBody] object data)
-        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
-
-    [HttpGet("trips")]
-    public IActionResult GetTripPredictions()
-        => Ok(new { message = "Feature coming soon", status = "not_implemented", data = new List<object>() });
+    [HttpGet("daily")]
+    public async Task<IActionResult> GetTodaysDailyLog()
+    {
+        var log = await _predictionService.GetTodaysDailyLogAsync(GetUserId());
+        if (log == null)
+            return Ok(new { message = "No daily log yet for today. Start logging your activities!" });
+        return Ok(log);
+    }
 
     [HttpPost("daily")]
-    public IActionResult PredictDaily([FromBody] object data)
-        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+    public async Task<IActionResult> CreateOrUpdateDailyLog([FromBody] DailyLogInputDto input)
+    {
+        var (dto, created) = await _predictionService.CreateOrUpdateDailyLogAsync(GetUserId(), input);
+        return Ok(new
+        {
+            message = created ? "Daily log created" : "Daily log updated",
+            daily_log = dto
+        });
+    }
 
-    [HttpGet("daily")]
-    public IActionResult GetDailyPredictions()
-        => Ok(new { message = "Feature coming soon", status = "not_implemented", data = new List<object>() });
+    [HttpGet("daily/history")]
+    public async Task<IActionResult> GetDailyLogHistory([FromQuery] int days = 7)
+    {
+        var logs = await _predictionService.GetDailyLogHistoryAsync(GetUserId(), days);
+        return Ok(new { count = logs.Count, results = logs });
+    }
+
+    // ==================== Trips ====================
+
+    [HttpPost("trips")]
+    public async Task<IActionResult> LogTrip([FromBody] PredictionTripCreateDto dto)
+    {
+        try
+        {
+            var trip = await _predictionService.LogTripAsync(GetUserId(), dto);
+            return StatusCode(201, new { message = "Trip logged successfully", trip });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("trips")]
+    public async Task<IActionResult> GetTodaysTrips()
+    {
+        var (trips, totalDistance, tripCount) = await _predictionService.GetTodaysTripsAsync(GetUserId());
+        return Ok(new
+        {
+            count = tripCount,
+            total_distance_km = totalDistance,
+            trips
+        });
+    }
+
+    [HttpGet("trips/history")]
+    public async Task<IActionResult> GetTripHistory([FromQuery] int days = 7)
+    {
+        var trips = await _predictionService.GetTripHistoryAsync(GetUserId(), days);
+        return Ok(new { count = trips.Count, trips });
+    }
+
+    // ==================== Predictions ====================
+
+    [HttpPost("predict")]
+    public async Task<IActionResult> Predict()
+    {
+        try
+        {
+            var result = await _predictionService.PredictEcoScoreAsync(GetUserId());
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("predict/quick")]
+    [AllowAnonymous]
+    public async Task<IActionResult> QuickPredict([FromBody] PredictionInputDto dto)
+    {
+        try
+        {
+            int? userId = User.Identity?.IsAuthenticated == true
+                ? int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)
+                : null;
+
+            var result = await _predictionService.QuickPredictAsync(dto, userId);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("history")]
+    public async Task<IActionResult> GetPredictionHistory([FromQuery] int limit = 10)
+    {
+        var (predictions, avgScore, total) = await _predictionService.GetPredictionHistoryAsync(GetUserId(), limit);
+        return Ok(new
+        {
+            count = predictions.Count,
+            total_predictions = total,
+            average_score = avgScore,
+            predictions
+        });
+    }
+
+    // ==================== Weekly Logs ====================
 
     [HttpGet("weekly")]
-    public IActionResult GetWeeklyPredictions()
-        => Ok(new { message = "Feature coming soon", status = "not_implemented", data = new List<object>() });
+    public async Task<IActionResult> GetWeeklyLog([FromQuery] DateOnly? weekStartDate)
+    {
+        var log = await _predictionService.GetWeeklyLogAsync(GetUserId(), weekStartDate);
+        if (log == null)
+            return NotFound(new { error = "No weekly log found." });
+        return Ok(log);
+    }
 
     [HttpPost("weekly")]
-    public IActionResult PredictWeekly([FromBody] object data)
-        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+    public async Task<IActionResult> CreateOrUpdateWeeklyLog([FromBody] WeeklyLogDto dto)
+    {
+        var log = await _predictionService.CreateOrUpdateWeeklyLogAsync(GetUserId(), dto);
+        return Ok(log);
+    }
+
+    // ==================== Model Info & Dashboard ====================
 
     [HttpGet("model-info")]
+    [AllowAnonymous]
     public IActionResult GetModelInfo()
-        => Ok(new {
-            message = "Feature coming soon",
-            status = "not_implemented",
-            model = new { name = "Eco Prediction Model", version = "1.0.0", status = "in_development" }
-        });
+    {
+        var info = _predictionService.GetModelInfo();
+        return Ok(info);
+    }
 
     [HttpGet("dashboard")]
-    public IActionResult GetPredictionDashboard()
-        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
-
-    [HttpPut("profile")]
-    public IActionResult UpdateProfile([FromBody] object data)
-        => Ok(new { message = "Feature coming soon", status = "not_implemented" });
+    public async Task<IActionResult> GetDashboard()
+    {
+        var dashboard = await _predictionService.GetDashboardAsync(GetUserId());
+        return Ok(dashboard);
+    }
 }

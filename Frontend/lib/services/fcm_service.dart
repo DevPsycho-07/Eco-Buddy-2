@@ -126,7 +126,7 @@ class FCMService {
       AppLogger.info('Auth token available: ${authToken.substring(0, 20)}...');
 
       final response = await _dio.post(
-        '$baseUrl/users/register-device-token',
+        '$baseUrl/users/register-device-token/',
         options: Options(
           headers: {
             'Authorization': 'Bearer $authToken',
@@ -134,8 +134,8 @@ class FCMService {
           },
         ),
         data: {
-          'deviceToken': token,
-          'deviceType': 'mobile',
+          'device_token': token,
+          'device_type': 'mobile',
         },
       );
 
@@ -250,17 +250,30 @@ class FCMService {
 
     switch (notificationType) {
       case 'achievement':
-        // Navigate to achievements page
-        // navigatorKey.currentState?.pushNamed('/achievements');
         AppLogger.info('Navigating to achievement: $targetId');
         break;
       case 'badge':
-        // Navigate to achievements page
         AppLogger.info('Navigating to badge: $targetId');
         break;
       case 'challenge':
-        // Navigate to challenges
         AppLogger.info('Navigating to challenge: $targetId');
+        break;
+      case 'streak':
+      case 'milestone':
+      case 'level_up':
+        AppLogger.info('Navigating to profile for: $notificationType');
+        break;
+      case 'goal':
+        AppLogger.info('Navigating to goal: $targetId');
+        break;
+      case 'daily_reminder':
+        AppLogger.info('Navigating to log activity');
+        break;
+      case 'weekly_report':
+        AppLogger.info('Navigating to analytics');
+        break;
+      case 'tip':
+        AppLogger.info('Eco tip notification tapped');
         break;
       default:
         AppLogger.info('Unknown notification type: $notificationType');

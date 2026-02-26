@@ -5,6 +5,7 @@ public class UserRegistrationDto
     public required string Email { get; set; }
     public required string Username { get; set; }
     public required string Password { get; set; }
+    public string? PasswordConfirm { get; set; }
     public string? FullName { get; set; }
 }
 
@@ -16,12 +17,12 @@ public class LoginDto
 
 public class RefreshTokenDto
 {
-    public required string RefreshToken { get; set; }
+    public required string Refresh { get; set; }
 }
 
 public class LogoutDto
 {
-    public string? RefreshToken { get; set; }
+    public string? Refresh { get; set; }
 }
 
 public class UserDto
@@ -49,8 +50,9 @@ public class UserDto
 public class AuthResponseDto
 {
     public required UserDto User { get; set; }
-    public required string AccessToken { get; set; }
-    public required string RefreshToken { get; set; }
+    public required string Access { get; set; }
+    public required string Refresh { get; set; }
+    public bool EmailVerified { get; set; }
 }
 
 public class UserProfileUpdateDto
@@ -105,4 +107,31 @@ public class VerifyEmailDto
 public class ResendVerificationEmailDto
 {
     public required string Email { get; set; }
+}
+
+public class NotificationPreferenceDto
+{
+    public bool DailyReminders { get; set; } = true;
+    public bool AchievementAlerts { get; set; } = true;
+    public bool WeeklyReports { get; set; } = true;
+    public bool TipsAndSuggestions { get; set; } = true;
+    public bool CommunityUpdates { get; set; } = false;
+}
+
+public class GoogleSignInDto
+{
+    public required string IdToken { get; set; }
+}
+
+public class WeeklyLogDto
+{
+    public int? Id { get; set; }
+    public DateOnly WeekStartDate { get; set; }
+    public int WasteBagCount { get; set; } = 0;
+    public double GeneralWasteKg { get; set; } = 0;
+    public double RecycledWasteKg { get; set; } = 0;
+    public double GroceryBill { get; set; } = 0;
+    public int NewClothesMonthly { get; set; } = 0;
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }

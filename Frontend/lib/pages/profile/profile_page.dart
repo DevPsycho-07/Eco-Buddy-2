@@ -8,10 +8,6 @@ import '../../services/auth_service.dart';
 import '../../services/guest_service.dart';
 import '../../core/config/api_config.dart';
 import '../../core/widgets/secure_profile_picture_avatar.dart';
-import 'edit_profile_page.dart';
-import 'notifications_page.dart';
-import 'help_support_page.dart';
-import 'export_data_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -40,16 +36,16 @@ class _ProfilePageState extends State<ProfilePage> {
         'id': 0,
         'username': 'Guest',
         'email': 'guest@example.com',
-        'firstName': 'Guest',
-        'lastName': 'User',
+        'first_name': 'Guest',
+        'last_name': 'User',
         'bio': 'Exploring the app',
-        'profilePicture': null,
-        'ecoScore': 0,
-        'totalCO2Saved': 0.0,
-        'currentStreak': 0,
-        'longestStreak': 0,
+        'profile_picture': null,
+        'eco_score': 0,
+        'total_co2_saved': 0.0,
+        'current_streak': 0,
+        'longest_streak': 0,
         'level': 1,
-        'experiencePoints': 0,
+        'experience_points': 0,
         'rank': null,
         'is_guest': true,
       };
@@ -60,7 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
       
       // Fetch user profile using ApiClient (handles token refresh on 401)
       final profileResponse = await ApiClient.get(
-        Uri.parse('$baseUrl/users/profile'),
+        Uri.parse('$baseUrl/users/profile/'),
       );
 
       if (profileResponse.statusCode != 200) {
@@ -75,7 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       // Fetch user rank
       final rankResponse = await ApiClient.get(
-        Uri.parse('$baseUrl/users/my-rank'),
+        Uri.parse('$baseUrl/users/my-rank/'),
       );
 
       if (rankResponse.statusCode == 200) {
@@ -293,7 +289,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ],
                           ),
                           child: SecureProfilePictureAvatar(
-                            key: ValueKey(profileData['profilePicture']),
+                            key: ValueKey(profileData['profile_picture']),
                             radius: 40,
                             backgroundColor: Colors.white,
                             placeholder: Padding(
@@ -325,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${profileData['firstName'] ?? ''} ${profileData['lastName'] ?? ''}'.trim(),
+                                '${profileData['first_name'] ?? ''} ${profileData['last_name'] ?? ''}'.trim(),
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -358,7 +354,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Since ${_formatDate(profileData['createdAt'])}',
+                                'Since ${_formatDate(profileData['created_at'])}',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.8),
                                   fontSize: 10,
@@ -372,13 +368,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             runSpacing: 8,
                             children: [
                               _buildCompactStat(
-                                  '${profileData['ecoScore'] ?? 0}', 'Score'),
+                                  '${profileData['eco_score']}', 'Score'),
                               _buildCompactStat(
                                   '#${profileData['rank'] ?? '...'}', 'Rank'),
                               _buildCompactStat(
                                   '${profileData['level'] ?? 1}', 'Level'),
                               _buildCompactStat(
-                                  '${(profileData['experiencePoints'] ?? 0)}', 'XP'),
+                                  '${(profileData['experience_points'] ?? 0)}', 'XP'),
                             ],
                           ),
                         ],
@@ -429,7 +425,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Expanded(
                         child: _buildImpactCard(
-                            '${profileData['totalCO2Saved']?.toStringAsFixed(1) ?? profileData['totalCo2Saved']?.toStringAsFixed(1) ?? '0'} kg',
+                            '${profileData['total_co2_saved']?.toStringAsFixed(1) ?? '0'} kg',
                             'CO₂ Saved',
                             Icons.cloud_off,
                             Colors.green),
@@ -437,7 +433,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildImpactCard(
-                            '${((profileData['totalCO2Saved'] ?? profileData['totalCo2Saved'] ?? 0) / 12).toStringAsFixed(1)}',
+                            '${((profileData['total_co2_saved'] ?? 0) / 12).toStringAsFixed(1)}',
                             'Trees Equiv.',
                             Icons.park,
                             Colors.teal),
@@ -449,7 +445,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Expanded(
                         child: _buildImpactCard(
-                            '${profileData['currentStreak'] ?? 0}',
+                            '${profileData['current_streak'] ?? 0}',
                             'Current Streak',
                             Icons.local_fire_department,
                             Colors.orange),
@@ -457,7 +453,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildImpactCard(
-                            '${profileData['longestStreak'] ?? 0}',
+                            '${profileData['longest_streak'] ?? 0}',
                             'Best Streak',
                             Icons.emoji_events,
                             Colors.blue.withValues(alpha: 1.0)),
@@ -772,12 +768,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _navigateToEditProfile(Map<String, dynamic> profileData) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditProfilePage(profileData: profileData),
-      ),
-    );
+    final result = await context.push('/edit-profile', extra: profileData);
     
     // Refresh profile if edited
     if (result == true) {
@@ -788,32 +779,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _navigateToNotifications(Map<String, dynamic> profileData) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => NotificationsPage(
-          notificationsEnabled: profileData['notificationsEnabled'] ?? true,
-        ),
-      ),
-    );
+    final notificationsEnabled = profileData['notifications_enabled'] ?? true;
+    context.push('/notification-settings', extra: notificationsEnabled);
   }
 
   void _navigateToExportData() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ExportDataPage(),
-      ),
-    );
+    context.push('/export-data');
   }
 
   void _navigateToHelpSupport() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const HelpSupportPage(),
-      ),
-    );
+    context.push('/help-support');
   }
 
   void _showLogoutDialog() {

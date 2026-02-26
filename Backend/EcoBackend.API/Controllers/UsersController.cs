@@ -59,13 +59,13 @@ public class UsersController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto dto)
     {
-        if (string.IsNullOrEmpty(dto.RefreshToken))
+        if (string.IsNullOrEmpty(dto.Refresh))
             return BadRequest(new { error = "Refresh token is required" });
 
-        var result = await _userService.RefreshTokenAsync(dto.RefreshToken);
+        var result = await _userService.RefreshTokenAsync(dto.Refresh);
         if (result != null) return Ok(result);
 
-        var error = await _userService.GetRefreshTokenErrorAsync(dto.RefreshToken);
+        var error = await _userService.GetRefreshTokenErrorAsync(dto.Refresh);
         return Unauthorized(new { error = error ?? "Invalid refresh token" });
     }
 
@@ -74,7 +74,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Logout([FromBody] LogoutDto? dto)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        await _userService.LogoutAsync(userId, dto?.RefreshToken);
+        await _userService.LogoutAsync(userId, dto?.Refresh);
         return Ok(new { message = "Successfully logged out" });
     }
 
@@ -102,7 +102,7 @@ public class UsersController : ControllerBase
 
     // ========== Profile Picture ==========
 
-    [HttpPost("upload-picture")]
+    [HttpPost("profile-picture")]
     [Authorize]
     public async Task<IActionResult> UploadProfilePicture(IFormFile profile_picture)
     {
@@ -121,7 +121,7 @@ public class UsersController : ControllerBase
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var result = await _userService.UploadProfilePictureAsync(userId, profile_picture);
             if (result == null) return NotFound();
-            return Ok(new { profilePicture = result });
+            return Ok(new { profilePictureUrl = result });
         }
         catch (Exception ex)
         {
@@ -320,9 +320,15 @@ public class UsersController : ControllerBase
 
     [HttpGet("daily-scores")]
     [Authorize]
-    public async Task<IActionResult> GetDailyScores([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    public async Task<IActionResult> GetDailyScores([FromQuery] int? days, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        // Support ?days=N shorthand (frontend convention) — converts to startDate/endDate
+        if (days.HasValue && !startDate.HasValue && !endDate.HasValue)
+        {
+            endDate = DateTime.UtcNow;
+            startDate = DateTime.UtcNow.AddDays(-days.Value);
+        }
         var scores = await _dailyScoreService.GetDailyScoresAsync(userId, startDate, endDate);
         return Ok(scores);
     }
@@ -528,5 +534,48 @@ public class UsersController : ControllerBase
         if (error != null)
             return BadRequest(new { error });
         return StatusCode(500, new { error = "Failed to send verification email. Please try again later." });
+    }
+
+    // ========== Google Sign-In ==========
+
+    /// <summary>
+    /// POST /api/users/google
+    /// Verify a Google ID token and return app JWT tokens.
+    /// Mirrors Django GoogleSignInView.
+    /// </summary>
+    [HttpPost("google")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GoogleSignIn([FromBody] GoogleSignInDto dto)
+    {
+        if (string.IsNullOrEmpty(dto.IdToken))
+            return BadRequest(new { error = "id_token is required" });
+
+        var (response, error) = await _userService.GoogleSignInAsync(dto.IdToken);
+        if (error != null)
+            return Unauthorized(new { error });
+
+        return Ok(response);
+    }
+
+    // ========== Notification Preferences (per-category) ==========
+
+    /// <summary>GET /api/users/notification-preferences — per-category preferences.</summary>
+    [HttpGet("notification-preferences")]
+    [Authorize]
+    public async Task<IActionResult> GetNotificationPreferences()
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var prefs = await _userService.GetNotificationPreferencesAsync(userId);
+        return Ok(prefs);
+    }
+
+    /// <summary>PATCH /api/users/notification-preferences — partial update.</summary>
+    [HttpPatch("notification-preferences")]
+    [Authorize]
+    public async Task<IActionResult> PatchNotificationPreferences([FromBody] NotificationPreferenceDto dto)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var prefs = await _userService.UpdateNotificationPreferencesAsync(userId, dto);
+        return Ok(prefs);
     }
 }

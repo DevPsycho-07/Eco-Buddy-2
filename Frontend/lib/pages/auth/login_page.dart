@@ -19,6 +19,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   bool _rememberMe = false;
 
   late AnimationController _fadeController;
@@ -67,6 +68,62 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+
+    final result = await AuthService.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      await GuestService.endGuestSession();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Signed in with Google!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      final hasEcoProfile = await EcoProfileService.hasCompletedSetup();
+      setState(() => _isGoogleLoading = false);
+      if (!mounted) return;
+
+      if (hasEcoProfile) {
+        context.go('/home');
+      } else {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const EcoProfileSetupPage(isFirstTime: true),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      }
+    } else {
+      setState(() => _isGoogleLoading = false);
+      final error = result['error'] ?? 'Google sign-in failed';
+      if (error != 'Sign in cancelled') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -80,7 +137,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
       if (result['success'] == true) {
         // Check if email is verified
-        final emailVerified = result['email_verified'] ?? result['user']?['emailVerified'] ?? true;
+        final emailVerified = result['email_verified'] ?? false;
         
         if (!emailVerified) {
           setState(() => _isLoading = false);
@@ -582,64 +639,60 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Widget _buildSocialLoginRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildSocialButton(
-          icon: Icons.g_mobiledata_rounded,
-          onPressed: () => _showComingSoon('Google'),
-        ),
-        const SizedBox(width: 16),
-        _buildSocialButton(
-          icon: Icons.apple_rounded,
-          onPressed: () => _showComingSoon('Apple'),
-        ),
-        const SizedBox(width: 16),
-        _buildSocialButton(
-          icon: Icons.facebook_rounded,
-          onPressed: () => _showComingSoon('Facebook'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSocialButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
     final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return GestureDetector(
-      onTap: onPressed,
+      onTap: _isGoogleLoading ? null : _handleGoogleSignIn,
       child: Container(
-        width: 56,
-        height: 48,
+        height: 52,
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF3A3A3A) : const Color(0xFFF8FBF8),
-          borderRadius: BorderRadius.circular(12),
+          color: isDarkMode ? const Color(0xFF3A3A3A) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: const Color(0xFF43A047).withValues(alpha: 0.1),
+            color: isDarkMode
+                ? const Color(0xFF555555)
+                : const Color(0xFFDADCE0),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.2 : 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Icon(
-          icon,
-          size: 26,
-          color: isDarkMode 
-            ? Colors.grey.shade400
-            : const Color(0xFF2E7D32).withValues(alpha: 0.7),
-        ),
-      ),
-    );
-  }
-
-  void _showComingSoon(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$provider login coming soon!'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        backgroundColor: const Color(0xFF43A047),
+        child: _isGoogleLoading
+            ? const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Color(0xFF43A047),
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/google_logo.png',
+                    width: 22,
+                    height: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Sign in with Google',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: isDarkMode
+                          ? Colors.white
+                          : const Color(0xFF3C4043),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

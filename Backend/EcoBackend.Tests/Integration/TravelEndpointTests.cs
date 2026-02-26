@@ -45,10 +45,10 @@ public class TravelEndpointTests : IAsyncLifetime
         if (loginResponse.IsSuccessStatusCode)
         {
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            if (loginResult != null && loginResult.ContainsKey("accessToken"))
+            if (loginResult != null && loginResult.ContainsKey("access"))
             {
                 _client.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["accessToken"]?.ToString());
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["access"]?.ToString());
             }
         }
     }
@@ -85,7 +85,7 @@ public class TravelEndpointTests : IAsyncLifetime
         var response = await _client.GetAsync("/api/travel/trips/stats?days=7");
         Assert.True(response.IsSuccessStatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("totalDistance", content);
+        Assert.Contains("total_distance", content);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class TravelEndpointTests : IAsyncLifetime
     {
         var response = await _client.PostAsJsonAsync("/api/travel/trips", new
         {
-            transportMode = "walking",
+            transport_mode = "walking",
             distanceKm = 2.5,
             durationMinutes = 30,
             startLatitude = 40.7128,
@@ -119,7 +119,7 @@ public class TravelEndpointTests : IAsyncLifetime
         // Create trip
         var createResponse = await _client.PostAsJsonAsync("/api/travel/trips", new
         {
-            transportMode = "cycling",
+            transport_mode = "cycling",
             distanceKm = 5.0,
             durationMinutes = 20,
             startLatitude = 40.7128,

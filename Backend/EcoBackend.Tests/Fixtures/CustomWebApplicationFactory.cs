@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using EcoBackend.Infrastructure.Data;
 
 namespace EcoBackend.Tests.Fixtures;
@@ -49,31 +50,24 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Set Testing environment FIRST so Program.cs skips SQLite registration
+        // and EnsureCreated(). This avoids the "two database providers" conflict.
+        builder.UseEnvironment("Testing");
+
         builder.ConfigureServices(services =>
         {
-            // Remove the existing DbContext registration
-            var descriptor = services.SingleOrDefault(d =>
-                d.ServiceType == typeof(DbContextOptions<EcoDbContext>));
-            if (descriptor != null)
-            {
-                services.Remove(descriptor);
-            }
-
-            // Remove the DbContext itself
-            var dbContextDescriptor = services.SingleOrDefault(d =>
-                d.ServiceType == typeof(EcoDbContext));
-            if (dbContextDescriptor != null)
-            {
-                services.Remove(dbContextDescriptor);
-            }
-
-            // Add in-memory database for testing
+            // SQLite is NOT registered in Testing env (guarded in Program.cs),
+            // so just add InMemory here — no removal needed.
             services.AddDbContext<EcoDbContext>(options =>
             {
                 options.UseInMemoryDatabase(databaseName: _databaseName);
             });
-        });
 
-        builder.UseEnvironment("Development");
+            // Eagerly create the InMemory schema so tests can insert data immediately.
+            var sp = services.BuildServiceProvider();
+            using var scope = sp.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<EcoDbContext>();
+            db.Database.EnsureCreated();
+        });
     }
 }

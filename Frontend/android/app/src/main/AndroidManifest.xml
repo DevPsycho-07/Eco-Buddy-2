@@ -41,7 +41,7 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     
     <application
-        android:label="Eco Buddy (.NET)"
+        android:label="Eco Buddy"
         android:name="${applicationName}"
         android:icon="@mipmap/logo">
 

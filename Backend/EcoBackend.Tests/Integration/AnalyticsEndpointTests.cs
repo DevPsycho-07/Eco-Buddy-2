@@ -45,10 +45,10 @@ public class AnalyticsEndpointTests : IAsyncLifetime
         if (loginResponse.IsSuccessStatusCode)
         {
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            if (loginResult != null && loginResult.ContainsKey("accessToken"))
+            if (loginResult != null && loginResult.ContainsKey("access"))
             {
                 _client.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["accessToken"]?.ToString());
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["access"]?.ToString());
             }
         }
     }
@@ -111,8 +111,8 @@ public class AnalyticsEndpointTests : IAsyncLifetime
         var response = await _client.GetAsync("/api/analytics/stats");
         Assert.True(response.IsSuccessStatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("totalActivities", content);
-        Assert.Contains("totalPoints", content);
+        Assert.Contains("total_activities", content);
+        Assert.Contains("total_points", content);
     }
 
     [Fact]
@@ -151,9 +151,10 @@ public class AnalyticsEndpointTests : IAsyncLifetime
         var response = await _client.GetAsync("/api/analytics/comparison");
         Assert.True(response.IsSuccessStatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("thisWeek", content);
-        Assert.Contains("lastWeek", content);
-        Assert.Contains("changes", content);
+        Assert.Contains("user", content);
+        Assert.Contains("average", content);
+        Assert.Contains("percentile", content);
+        Assert.Contains("comparison", content);
     }
 
     // ========== Export ==========

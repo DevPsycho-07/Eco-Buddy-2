@@ -322,11 +322,15 @@ public class NotificationService
     /// </summary>
     public async Task<int> MarkAllNotificationsAsReadAsync(int userId)
     {
-        var count = await _context.Notifications
+        var notifications = await _context.Notifications
             .Where(n => n.UserId == userId && !n.IsRead)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(n => n.IsRead, true));
+            .ToListAsync();
         
-        return count;
+        foreach (var n in notifications)
+            n.IsRead = true;
+        
+        await _context.SaveChangesAsync();
+        return notifications.Count;
     }
     
     /// <summary>

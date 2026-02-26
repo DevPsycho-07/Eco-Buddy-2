@@ -45,10 +45,10 @@ public class AchievementsEndpointTests : IAsyncLifetime
         if (loginResponse.IsSuccessStatusCode)
         {
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            if (loginResult != null && loginResult.ContainsKey("accessToken"))
+            if (loginResult != null && loginResult.ContainsKey("access"))
             {
                 _client.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["accessToken"]?.ToString());
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["access"]?.ToString());
             }
         }
     }
@@ -92,7 +92,7 @@ public class AchievementsEndpointTests : IAsyncLifetime
         var response = await _client.GetAsync("/api/achievements/my-badges/summary");
         Assert.True(response.IsSuccessStatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("totalBadges", content);
+        Assert.Contains("total_badges", content);
     }
 
     // ========== Challenges ==========
@@ -180,8 +180,8 @@ public class AchievementsEndpointTests : IAsyncLifetime
         var response = await _client.GetAsync("/api/achievements/summary");
         Assert.True(response.IsSuccessStatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("totalBadges", content);
-        Assert.Contains("totalChallenges", content);
+        Assert.Contains("total_badges", content);
+        Assert.Contains("total_challenges", content);
     }
 
     // ========== Unauthorized Access ==========

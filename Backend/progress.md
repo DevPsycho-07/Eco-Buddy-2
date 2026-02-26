@@ -1,7 +1,7 @@
 # 🎯 Eco Daily Score - Migration Progress
 
 **Last Updated:** February 26, 2026  
-**Project Status:** ✅ 100% Complete — Production Ready
+**Project Status:** ✅ 100% Complete — Backend Running, Frontend Configured
 
 ---
 
@@ -37,7 +37,7 @@
 
 ```
 ✅ COMPLETED:  Flutter app (100% feature complete)
-✅ STATUS:     Fully Functional & Tested
+✅ STATUS:     Fully Functional — All platform configs set, packages resolved, backend connected
 ✅ FEATURES:   All 14 services, all UI pages, all state management
 ```
 
@@ -49,6 +49,10 @@
 - Configuration: 100% ✅
 - Device Token Management: 100% ✅
 - Offline Support: 100% ✅
+- App Identity (all platforms): 100% ✅ (com.ecobuddy.dotnet — no collision with eco_daily_score)
+- Missing Dependencies: 100% ✅ (flutter_dotenv, google_sign_in, shared_preferences added)
+- Security (gitignore): 100% ✅ (.env, google-services.json, GoogleService-Info.plist excluded)
+- VS Code C++ IntelliSense: 100% ✅ (c_cpp_properties.json configured)
 
 ---
 
@@ -832,5 +836,96 @@ These improve quality:
 - Build verified: 0 errors
 
 **Next Focus:** ML Predictions (ONNX Integration)  
-**Last Update:** February 16, 2026  
-**Next Review:** February 17, 2026
+**Last Update:** February 26, 2026  
+**Next Review:** TBD
+
+---
+
+✅ **Frontend App Identity & Configuration — February 26, 2026**
+
+**Problem:** Flutter frontend copied from `eco_daily_score` had all package identifiers, deep link schemes, app names, and binary names colliding with the original app. Both apps could not coexist on the same device.
+
+**Solution — New Identity:**
+- Display Name: `Eco Buddy`
+- Internal Name: `eco_buddy_dotnet`
+- Package / Bundle ID: `com.ecobuddy.dotnet`
+- Deep Link Scheme: `eco-buddy-dotnet`
+
+**Files Changed:**
+
+*Android:*
+- `android/app/build.gradle.kts` — `namespace` + `applicationId` → `com.ecobuddy.dotnet`
+- `android/app/src/main/AndroidManifest.xml` — deep link scheme → `eco-buddy-dotnet`
+- `android/app/google-services.json` — `package_name` → `com.ecobuddy.dotnet`
+- Deleted old `kotlin/com/example/eco_daily_score/MainActivity.kt` (new one kept at `com/ecobuddy/dotnet/`)
+
+*iOS:*
+- `ios/Runner.xcodeproj/project.pbxproj` — all 6 `PRODUCT_BUNDLE_IDENTIFIER` occurrences → `com.ecobuddy.dotnet` / `com.ecobuddy.dotnet.RunnerTests`
+- `ios/Runner/Info.plist` — `CFBundleDisplayName` → `Eco Buddy`, `CFBundleName` → `eco_buddy_dotnet`
+
+*macOS:*
+- `macos/Runner/Configs/AppInfo.xcconfig` — `PRODUCT_NAME`, `PRODUCT_BUNDLE_IDENTIFIER`, copyright
+- `macos/Runner.xcodeproj/project.pbxproj` — 3 test bundle IDs + app name references
+
+*Web:*
+- `web/index.html` — `<title>`, `apple-mobile-web-app-title`, description meta
+- `web/manifest.json` — `name`, `short_name`, `description`
+
+*Desktop:*
+- `windows/runner/main.cpp` — window title → `L"Eco Buddy"`
+- `linux/CMakeLists.txt` — `BINARY_NAME` → `eco_buddy_dotnet`, `APPLICATION_ID` → `com.ecobuddy.dotnet`
+
+*Dart:*
+- `lib/main.dart` — deep link scheme comments updated
+- `test/auth_service_test.dart`, `test/login_page_test.dart` — `package:` imports fixed to `eco_daily_score_dotnet`
+
+---
+
+✅ **Frontend Missing Packages Resolved — February 26, 2026**
+
+**Problem:** Three packages used in Dart code were missing from `pubspec.yaml`, causing `uri_does_not_exist` and `undefined_identifier` errors in `main.dart`, `auth_service.dart`, and `tips_page.dart`.
+
+**Fix — Added to `pubspec.yaml`:**
+- `flutter_dotenv: ^5.1.0` — `.env` file loading (used in `main.dart` and `auth_service.dart`)
+- `google_sign_in: ^6.2.2` — Google OAuth (used in `auth_service.dart`)
+- `shared_preferences: ^2.5.4` — Persistent local key-value store (used in `tips_page.dart`)
+- `.env` added to `flutter:assets:` section so `dotenv.load()` can find it at runtime
+
+---
+
+✅ **Security: .gitignore & .env.example — February 26, 2026**
+
+**Problem:** `google-services.json` (contains live Firebase API key) and `.env` variants were not all excluded from git.
+
+**Fix — Added to `.gitignore`:**
+- `google-services.json`
+- `GoogleService-Info.plist`
+- `firebase_options.dart`
+- `.env.local`, `.env.*.local`
+
+**Created `.env.example`** — safe template with empty values for `HF_TOKEN` and `GOOGLE_CLIENT_ID`, committed as onboarding reference.
+
+> ⚠️ Note: `HF_TOKEN` and `GOOGLE_CLIENT_ID` in the existing `.env` file are real credentials. Rotate them if the repo has any prior commits containing those values.
+
+---
+
+✅ **VS Code C++ IntelliSense Fix — February 26, 2026**
+
+**Problem:** `windows/runner/main.cpp` showed `cannot open source file "flutter/dart_project.h"` IntelliSense errors because VS Code's C/C++ extension didn't know where Flutter's Windows embedding headers live.
+
+**Fix:** Created `.vscode/c_cpp_properties.json` pointing to:
+- `C:/flutter/bin/cache/artifacts/engine/windows-x64/cpp_client_wrapper/include` (and debug/release variants)
+- `${workspaceFolder}/windows/flutter/ephemeral/...` (populated after first `flutter build windows`)
+- Correct MSVC compiler: `VS 18 Community / MSVC 14.50.35717 / Hostx64`
+
+Errors are purely IntelliSense — they do not affect `flutter build windows`.
+
+---
+
+✅ **Backend Confirmed Running — February 26, 2026**
+
+`dotnet run` from `EcoBackend.API` directory:
+- Listening on `http://localhost:5000`
+- LLaMA model loaded: `ecobot-3b-q5_k_m.gguf` (3.21B params, Q5_K_M, 2.16 GiB) via LLamaSharp
+- Hangfire server started, all 5 recurring jobs registered
+- 0 build errors, 0 warnings

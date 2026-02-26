@@ -54,11 +54,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configure Database
-builder.Services.AddDbContext<EcoDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") 
-        ?? "Data Source=eco.db",
-        b => b.MigrationsAssembly("EcoBackend.Infrastructure")));
+// Configure Database (skipped in Testing env — factory registers InMemory instead)
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddDbContext<EcoDbContext>(options =>
+        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? "Data Source=eco.db",
+            b => b.MigrationsAssembly("EcoBackend.Infrastructure")));
+}
 
 // Configure Identity
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
@@ -199,9 +202,10 @@ app.MapGet("/api", () => new
     }
 });
 
-// Ensure database exists
-using (var scope = app.Services.CreateScope())
+// Ensure database exists (skip in Testing — InMemory is auto-created by factory)
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<EcoDbContext>();
     context.Database.EnsureCreated();
 }

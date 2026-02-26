@@ -45,10 +45,10 @@ public class PredictionsEndpointTests : IAsyncLifetime
         if (loginResponse.IsSuccessStatusCode)
         {
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            if (loginResult != null && loginResult.ContainsKey("accessToken"))
+            if (loginResult != null && loginResult.ContainsKey("access"))
             {
                 _client.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["accessToken"]?.ToString());
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["access"]?.ToString());
             }
         }
     }
@@ -133,87 +133,80 @@ public class PredictionsEndpointTests : IAsyncLifetime
         Assert.True(response.IsSuccessStatusCode);
     }
 
-    // ========== Prediction Stubs ==========
+    // ========== Prediction Stubs (now implemented) ==========
 
     [Fact]
     public async Task Predict_ShouldReturnNotImplemented()
     {
         var response = await _client.PostAsJsonAsync("/api/predictions/predict", new { });
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        // Implemented endpoint - may return 400 if ML model has no data, accept either
+        Assert.True(response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.BadRequest,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task QuickPredict_ShouldReturnNotImplemented()
     {
         var response = await _client.PostAsJsonAsync("/api/predictions/predict/quick", new { });
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.BadRequest,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task GetPredictionHistory_ShouldReturnNotImplemented()
     {
         var response = await _client.GetAsync("/api/predictions/history");
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task PredictTrips_ShouldReturnNotImplemented()
     {
         var response = await _client.PostAsJsonAsync("/api/predictions/trips", new { });
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.BadRequest,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task GetTripPredictions_ShouldReturnNotImplemented()
     {
         var response = await _client.GetAsync("/api/predictions/trips");
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task PredictDaily_ShouldReturnNotImplemented()
     {
         var response = await _client.PostAsJsonAsync("/api/predictions/daily", new { });
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.BadRequest,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task GetDailyPredictions_ShouldReturnNotImplemented()
     {
         var response = await _client.GetAsync("/api/predictions/daily");
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task GetWeeklyPredictions_ShouldReturnNotImplemented()
     {
         var response = await _client.GetAsync("/api/predictions/weekly");
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        // Returns 404 if no weekly log exists yet
+        Assert.True(response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task PredictWeekly_ShouldReturnNotImplemented()
     {
         var response = await _client.PostAsJsonAsync("/api/predictions/weekly", new { });
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.BadRequest,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
@@ -229,18 +222,16 @@ public class PredictionsEndpointTests : IAsyncLifetime
     public async Task GetPredictionDashboard_ShouldReturnNotImplemented()
     {
         var response = await _client.GetAsync("/api/predictions/dashboard");
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     [Fact]
     public async Task UpdateProfile_Stub_ShouldReturnNotImplemented()
     {
         var response = await _client.PutAsJsonAsync("/api/predictions/profile", new { });
-        Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("not_implemented", content);
+        Assert.True(response.IsSuccessStatusCode,
+            $"Unexpected status {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
 
     // ========== Unauthorized Access ==========

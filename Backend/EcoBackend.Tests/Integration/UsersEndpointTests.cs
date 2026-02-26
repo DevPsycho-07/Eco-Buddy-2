@@ -56,13 +56,13 @@ public class UsersEndpointTests : IAsyncLifetime
 
         var loginResult = await loginResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
         
-        if (loginResult == null || !loginResult.ContainsKey("accessToken"))
+        if (loginResult == null || !loginResult.ContainsKey("access"))
         {
             return ("", "", 0);
         }
 
-        var accessToken = loginResult["accessToken"]?.ToString() ?? "";
-        var refreshToken = loginResult["refreshToken"]?.ToString() ?? "";
+        var accessToken = loginResult["access"]?.ToString() ?? "";
+        var refreshToken = loginResult["refresh"]?.ToString() ?? "";
         var userId = 0;
         if (loginResult.ContainsKey("user"))
         {
@@ -159,8 +159,8 @@ public class UsersEndpointTests : IAsyncLifetime
 
         Assert.True(response.IsSuccessStatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("accessToken", content);
-        Assert.Contains("refreshToken", content);
+        Assert.Contains("\"access\":", content);
+        Assert.Contains("\"refresh\":", content);
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public class UsersEndpointTests : IAsyncLifetime
 
         var response = await _client.PostAsJsonAsync("/api/users/token/refresh", new
         {
-            refreshToken
+            refresh = refreshToken
         });
 
         // Should succeed or return 401 if token format differs
@@ -360,7 +360,7 @@ public class UsersEndpointTests : IAsyncLifetime
         {
             title = "Walk 10km",
             description = "Walk 10km this week",
-            targetValue = 10.0,
+            target_value = 10.0,
             unit = "km",
             deadline = DateTime.UtcNow.AddDays(7).ToString("o")
         });

@@ -45,10 +45,10 @@ public class ActivitiesEndpointTests : IAsyncLifetime
         if (loginResponse.IsSuccessStatusCode)
         {
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            if (loginResult != null && loginResult.ContainsKey("accessToken"))
+            if (loginResult != null && loginResult.ContainsKey("access"))
             {
                 _client.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["accessToken"]?.ToString());
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["access"]?.ToString());
             }
         }
     }
@@ -146,7 +146,7 @@ public class ActivitiesEndpointTests : IAsyncLifetime
         var response = await _client.GetAsync("/api/activities/summary?days=7");
         Assert.True(response.IsSuccessStatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("totalActivities", content);
+        Assert.Contains("total_activities", content);
     }
 
     [Fact]

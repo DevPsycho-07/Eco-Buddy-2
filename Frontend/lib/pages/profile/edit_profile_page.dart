@@ -301,8 +301,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
       
       // Update profile data
-      final response = await ApiClient.patch(
-        Uri.parse('$baseUrl/users/profile/'),
+      final response = await ApiClient.put(
+        Uri.parse('$baseUrl/users/profile'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'first_name': _firstNameController.text.trim(),
@@ -323,8 +323,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
           Navigator.pop(context, true); // Return true to indicate success
         }
       } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Failed to update profile');
+        final body = response.body;
+        final errorData = body.isNotEmpty ? jsonDecode(body) as Map<String, dynamic> : <String, dynamic>{};
+        throw Exception(errorData['detail'] ?? 'Failed to update profile (${response.statusCode})');
       }
     } catch (e) {
       setState(() {

@@ -189,8 +189,77 @@ public class EcoDbContext : IdentityDbContext<User, IdentityRole<int>, int>
                 .OnDelete(DeleteBehavior.Cascade);
         });
         
-        // Seed Badge data
+        // Seed data
+        SeedActivityCategories(builder);
+        SeedActivityTypes(builder);
+        SeedTips(builder);
         SeedBadges(builder);
+    }
+
+    private static void SeedActivityCategories(ModelBuilder builder)
+    {
+        builder.Entity<ActivityCategory>().HasData(
+            new ActivityCategory { Id = 1, Name = "Transport", Icon = "directions_car", Color = "#2196F3", Description = "Transportation and commuting activities" },
+            new ActivityCategory { Id = 2, Name = "Food", Icon = "restaurant", Color = "#4CAF50", Description = "Food choices and dietary habits" },
+            new ActivityCategory { Id = 3, Name = "Energy", Icon = "bolt", Color = "#FF9800", Description = "Home energy usage and conservation" },
+            new ActivityCategory { Id = 4, Name = "Recycling", Icon = "recycling", Color = "#9C27B0", Description = "Waste management and recycling" },
+            new ActivityCategory { Id = 5, Name = "Water", Icon = "water_drop", Color = "#00BCD4", Description = "Water usage and conservation" }
+        );
+    }
+
+    private static void SeedActivityTypes(ModelBuilder builder)
+    {
+        builder.Entity<ActivityType>().HasData(
+            // Transport (CategoryId = 1)
+            new ActivityType { Id = 1, CategoryId = 1, Name = "Walking", Icon = "directions_walk", CO2Impact = 0.0, ImpactUnit = "per km", IsEcoFriendly = true, Points = 15 },
+            new ActivityType { Id = 2, CategoryId = 1, Name = "Cycling", Icon = "directions_bike", CO2Impact = 0.0, ImpactUnit = "per km", IsEcoFriendly = true, Points = 15 },
+            new ActivityType { Id = 3, CategoryId = 1, Name = "Public Transit", Icon = "directions_bus", CO2Impact = 0.089, ImpactUnit = "per km", IsEcoFriendly = true, Points = 10 },
+            new ActivityType { Id = 4, CategoryId = 1, Name = "Train", Icon = "train", CO2Impact = 0.041, ImpactUnit = "per km", IsEcoFriendly = true, Points = 12 },
+            new ActivityType { Id = 5, CategoryId = 1, Name = "Car (Solo)", Icon = "directions_car", CO2Impact = 0.192, ImpactUnit = "per km", IsEcoFriendly = false, Points = 0 },
+            new ActivityType { Id = 6, CategoryId = 1, Name = "Carpooling", Icon = "people", CO2Impact = 0.096, ImpactUnit = "per km", IsEcoFriendly = true, Points = 8 },
+            new ActivityType { Id = 7, CategoryId = 1, Name = "Electric Vehicle", Icon = "electric_car", CO2Impact = 0.053, ImpactUnit = "per km", IsEcoFriendly = true, Points = 10 },
+            new ActivityType { Id = 8, CategoryId = 1, Name = "Running", Icon = "directions_run", CO2Impact = 0.0, ImpactUnit = "per km", IsEcoFriendly = true, Points = 15 },
+
+            // Food (CategoryId = 2)
+            new ActivityType { Id = 9, CategoryId = 2, Name = "Vegan Meal", Icon = "eco", CO2Impact = -2.5, ImpactUnit = "per meal", IsEcoFriendly = true, Points = 20 },
+            new ActivityType { Id = 10, CategoryId = 2, Name = "Vegetarian Meal", Icon = "grass", CO2Impact = -1.5, ImpactUnit = "per meal", IsEcoFriendly = true, Points = 15 },
+            new ActivityType { Id = 11, CategoryId = 2, Name = "Local Produce", Icon = "storefront", CO2Impact = -0.5, ImpactUnit = "per purchase", IsEcoFriendly = true, Points = 10 },
+            new ActivityType { Id = 12, CategoryId = 2, Name = "Zero Waste Cooking", Icon = "soup_kitchen", CO2Impact = -1.0, ImpactUnit = "per meal", IsEcoFriendly = true, Points = 15 },
+            new ActivityType { Id = 13, CategoryId = 2, Name = "Meat-based Meal", Icon = "lunch_dining", CO2Impact = 3.3, ImpactUnit = "per meal", IsEcoFriendly = false, Points = 0 },
+
+            // Energy (CategoryId = 3)
+            new ActivityType { Id = 14, CategoryId = 3, Name = "Solar Energy Used", Icon = "solar_power", CO2Impact = -1.5, ImpactUnit = "per kWh", IsEcoFriendly = true, Points = 20 },
+            new ActivityType { Id = 15, CategoryId = 3, Name = "LED Lighting", Icon = "lightbulb", CO2Impact = -0.05, ImpactUnit = "per hour", IsEcoFriendly = true, Points = 5 },
+            new ActivityType { Id = 16, CategoryId = 3, Name = "Air Dry Laundry", Icon = "dry_cleaning", CO2Impact = -2.4, ImpactUnit = "per load", IsEcoFriendly = true, Points = 10 },
+            new ActivityType { Id = 17, CategoryId = 3, Name = "Thermostat Reduction", Icon = "thermostat", CO2Impact = -0.3, ImpactUnit = "per degree/day", IsEcoFriendly = true, Points = 8 },
+
+            // Recycling (CategoryId = 4)
+            new ActivityType { Id = 18, CategoryId = 4, Name = "Recycling", Icon = "recycling", CO2Impact = -0.5, ImpactUnit = "per kg", IsEcoFriendly = true, Points = 10 },
+            new ActivityType { Id = 19, CategoryId = 4, Name = "Composting", Icon = "compost", CO2Impact = -0.3, ImpactUnit = "per kg", IsEcoFriendly = true, Points = 10 },
+            new ActivityType { Id = 20, CategoryId = 4, Name = "Upcycling", Icon = "auto_awesome", CO2Impact = -1.0, ImpactUnit = "per item", IsEcoFriendly = true, Points = 15 },
+            new ActivityType { Id = 21, CategoryId = 4, Name = "Plastic-Free Day", Icon = "block", CO2Impact = -0.2, ImpactUnit = "per day", IsEcoFriendly = true, Points = 20 },
+
+            // Water (CategoryId = 5)
+            new ActivityType { Id = 22, CategoryId = 5, Name = "Short Shower", Icon = "shower", CO2Impact = -0.1, ImpactUnit = "per shower", IsEcoFriendly = true, Points = 5 },
+            new ActivityType { Id = 23, CategoryId = 5, Name = "Rainwater Harvesting", Icon = "water", CO2Impact = -0.2, ImpactUnit = "per litre", IsEcoFriendly = true, Points = 10 },
+            new ActivityType { Id = 24, CategoryId = 5, Name = "Fix Leaks", Icon = "plumbing", CO2Impact = -0.5, ImpactUnit = "per fix", IsEcoFriendly = true, Points = 15 }
+        );
+    }
+
+    private static void SeedTips(ModelBuilder builder)
+    {
+        builder.Entity<Tip>().HasData(
+            new Tip { Id = 1, CategoryId = 1, Title = "Walk or Cycle Short Distances", Content = "For trips under 3 km, consider walking or cycling instead of driving. You'll save fuel and stay fit.", ImpactDescription = "Saves ~0.2 kg CO2 per km", IsActive = true, Priority = 1 },
+            new Tip { Id = 2, CategoryId = 1, Title = "Use Public Transport", Content = "Buses and trains emit far less CO2 per passenger than individual cars.", ImpactDescription = "Saves ~0.1 kg CO2 per km vs car", IsActive = true, Priority = 2 },
+            new Tip { Id = 3, CategoryId = 1, Title = "Try Carpooling", Content = "Share rides with colleagues or neighbours to halve your per-person emissions.", ImpactDescription = "Reduces car emissions by 50%", IsActive = true, Priority = 3 },
+            new Tip { Id = 4, CategoryId = 2, Title = "Eat More Plant-Based Meals", Content = "Replacing one beef meal with a plant-based alternative saves about 3 kg of CO2.", ImpactDescription = "Saves ~3 kg CO2 per meal swap", IsActive = true, Priority = 1 },
+            new Tip { Id = 5, CategoryId = 2, Title = "Buy Local Produce", Content = "Locally sourced food travels less, reducing transport emissions and supporting local farmers.", ImpactDescription = "Reduces food miles significantly", IsActive = true, Priority = 2 },
+            new Tip { Id = 6, CategoryId = 3, Title = "Switch to LED Bulbs", Content = "LED bulbs use up to 80% less energy than incandescent bulbs and last 25 times longer.", ImpactDescription = "Saves ~40 kg CO2 per bulb/year", IsActive = true, Priority = 1 },
+            new Tip { Id = 7, CategoryId = 3, Title = "Unplug Idle Devices", Content = "Electronics on standby still consume power. Unplug chargers and devices when not in use.", ImpactDescription = "Saves ~100 kWh per year", IsActive = true, Priority = 2 },
+            new Tip { Id = 8, CategoryId = 4, Title = "Start Composting", Content = "Composting food scraps reduces methane from landfills and creates nutrient-rich soil.", ImpactDescription = "Diverts ~200 kg waste/year", IsActive = true, Priority = 1 },
+            new Tip { Id = 9, CategoryId = 4, Title = "Refuse Single-Use Plastics", Content = "Carry reusable bags, bottles, and containers to avoid single-use plastic waste.", ImpactDescription = "Prevents ~50 kg plastic waste/year", IsActive = true, Priority = 2 },
+            new Tip { Id = 10, CategoryId = 5, Title = "Shorten Your Shower", Content = "Reducing shower time by 2 minutes saves about 20 litres of water per shower.", ImpactDescription = "Saves ~7,000 litres per year", IsActive = true, Priority = 1 }
+        );
     }
     
     private static void SeedBadges(ModelBuilder builder)

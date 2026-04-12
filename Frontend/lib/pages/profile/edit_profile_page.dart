@@ -1,14 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import '../../services/http_client.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/dio_client.dart';
+import '../../core/widgets/secure_profile_picture_avatar.dart';
 import '../../services/auth_service.dart';
 import '../../services/eco_profile_service.dart';
 import '../../services/secure_profile_picture_service.dart';
 import '../../services/permission_service.dart';
-import '../../core/config/api_config.dart';
-import '../../core/widgets/secure_profile_picture_avatar.dart';
 import 'eco_profile_setup_page.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -293,40 +293,37 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
 
     try {
-      const baseUrl = ApiConfig.baseUrl;
-      
       // Upload image first if selected (via secure service)
       if (_selectedImage != null) {
         await _uploadImage();
       }
-      
+
       // Update profile data
-      final response = await ApiClient.put(
-        Uri.parse('$baseUrl/users/profile'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      await sl<DioClient>().dio.put(
+        '/users/profile',
+        data: {
           'first_name': _firstNameController.text.trim(),
           'last_name': _lastNameController.text.trim(),
           'username': _usernameController.text.trim(),
           'bio': _bioController.text.trim(),
-        }),
+        },
       );
 
-      if (response.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile updated successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context, true); // Return true to indicate success
-        }
-      } else {
-        final body = response.body;
-        final errorData = body.isNotEmpty ? jsonDecode(body) as Map<String, dynamic> : <String, dynamic>{};
-        throw Exception(errorData['detail'] ?? 'Failed to update profile (${response.statusCode})');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true); // Return true to indicate success
       }
+    } on DioException catch (e) {
+      final errorData = e.response?.data;
+      final detail = errorData is Map ? errorData['detail'] : null;
+      setState(() {
+        _errorMessage = detail ?? 'Failed to update profile (${e.response?.statusCode})';
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');

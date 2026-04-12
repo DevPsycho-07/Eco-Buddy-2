@@ -52,10 +52,18 @@ public class ActivitiesController : ControllerBase
     public async Task<IActionResult> GetActivities(
         [FromQuery] DateTime? startDate,
         [FromQuery] DateTime? endDate,
-        [FromQuery] int? category)
+        [FromQuery] int? category,
+        [FromQuery] string? search)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var activities = await _activityService.GetActivitiesAsync(userId, startDate, endDate, category);
+        if (!string.IsNullOrEmpty(search))
+        {
+            activities = activities.Where(a =>
+                (a.ActivityType?.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.Notes?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+        }
         return Ok(activities);
     }
 
@@ -115,14 +123,7 @@ public class ActivitiesController : ControllerBase
         return Ok(tip);
     }
 
-    // Alternative routes for frontend compatibility
-    [HttpGet("log/today")]
-    public Task<IActionResult> GetTodayActivitiesAlt() => GetTodayActivities();
-
-    [HttpGet("log/summary")]
-    public Task<IActionResult> GetSummaryAlt([FromQuery] int days = 7) => GetSummary(days);
-
-    [HttpGet("log/history")]
+    [HttpGet("history")]
     public async Task<IActionResult> GetActivityHistory([FromQuery] int days = 30)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -145,28 +146,4 @@ public class ActivitiesController : ControllerBase
         if (!deleted) return NotFound();
         return NoContent();
     }
-
-    // Alternative POST route for frontend compatibility (POST /api/activities/log/)
-    [HttpPost("log")]
-    public Task<IActionResult> CreateActivityAlt([FromBody] ActivityCreateDto dto) => CreateActivity(dto);
-
-    // Search route for frontend compatibility (GET /api/activities/activities/?search=)
-    [HttpGet("activities")]
-    public async Task<IActionResult> SearchActivities([FromQuery] string? search)
-    {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var activities = await _activityService.GetActivitiesAsync(userId, null, null, null);
-        if (!string.IsNullOrEmpty(search))
-        {
-            activities = activities.Where(a => 
-                (a.ActivityType?.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (a.Notes?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
-            ).ToList();
-        }
-        return Ok(activities);
-    }
-
-    // Alternative route: DELETE /api/activities/log/{id}
-    [HttpDelete("log/{id}")]
-    public Task<IActionResult> DeleteActivityAlt(int id) => DeleteActivity(id);
 }

@@ -28,7 +28,9 @@ public class TravelService
         if (!string.IsNullOrEmpty(mode))
             query = query.Where(t => t.TransportMode == mode);
 
-        var trips = await query.OrderByDescending(t => t.TripDate).ThenByDescending(t => t.StartTime).ToListAsync();
+        // Sort by TripDate in DB, then by StartTime in-memory (SQLite doesn't support TimeSpan ordering)
+        var trips = await query.OrderByDescending(t => t.TripDate).ToListAsync();
+        trips = trips.OrderByDescending(t => t.TripDate).ThenByDescending(t => t.StartTime).ToList();
 
         return trips.Select(MapToTripDto).ToList();
     }
@@ -37,10 +39,11 @@ public class TravelService
     {
         var today = DateTime.UtcNow.Date;
 
+        // Fetch from DB first, then sort by StartTime in-memory (SQLite doesn't support TimeSpan ordering)
         var trips = await _context.Trips
             .Where(t => t.UserId == userId && t.TripDate == today)
-            .OrderByDescending(t => t.StartTime)
             .ToListAsync();
+        trips = trips.OrderByDescending(t => t.StartTime).ToList();
 
         return trips.Select(MapToTripDto).ToList();
     }

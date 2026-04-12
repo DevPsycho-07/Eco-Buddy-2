@@ -100,6 +100,16 @@ public class UsersController : ControllerBase
         return Ok(profile);
     }
 
+    [HttpPatch("profile")]
+    [Authorize]
+    public async Task<IActionResult> PatchProfile([FromBody] UserProfileUpdateDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var profile = await _userService.UpdateProfileAsync(userId, dto);
+        if (profile == null) return NotFound();
+        return Ok(profile);
+    }
+
     // ========== Profile Picture ==========
 
     [HttpPost("profile-picture")]
@@ -577,5 +587,38 @@ public class UsersController : ControllerBase
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var prefs = await _userService.UpdateNotificationPreferencesAsync(userId, dto);
         return Ok(prefs);
+    }
+
+    /// <summary>POST /api/users/test-notification — send a test push notification (dev only).</summary>
+    [HttpPost("test-notification")]
+    [Authorize]
+    public async Task<IActionResult> SendTestNotification()
+    {
+        if (!HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
+            return StatusCode(403, new { error = "Only available in development mode" });
+
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        try
+        {
+            var notification = await _notificationService.CreateNotificationAsync(
+                userId,
+                "🔔 Test Notification",
+                "If you see this, push notifications are working!",
+                "general"
+            );
+
+            return Ok(new
+            {
+                message = "Test notification sent successfully",
+                notification_id = notification.Id,
+                title = notification.Title,
+                body = notification.Body
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = "Failed to send test notification", details = ex.Message });
+        }
     }
 }

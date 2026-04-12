@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:eco_daily_score_dotnet/services/auth_service.dart';
+import 'package:eco_daily_score_net/services/auth_service.dart';
 
 void main() {
   group('AuthService - Method Signatures', () {

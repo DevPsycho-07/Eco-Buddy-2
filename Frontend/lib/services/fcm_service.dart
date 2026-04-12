@@ -126,7 +126,7 @@ class FCMService {
       AppLogger.info('Auth token available: ${authToken.substring(0, 20)}...');
 
       final response = await _dio.post(
-        '$baseUrl/users/register-device-token/',
+        '$baseUrl/users/register-device-token',
         options: Options(
           headers: {
             'Authorization': 'Bearer $authToken',

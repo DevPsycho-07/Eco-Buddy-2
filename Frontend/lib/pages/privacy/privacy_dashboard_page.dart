@@ -1081,7 +1081,7 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
   Future<void> _exportAsJson(Map<String, dynamic> data) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final fileName = 'eco_daily_score_export_${DateTime.now().millisecondsSinceEpoch}.json';
+      final fileName = 'eco_daily_score_net_export_${DateTime.now().millisecondsSinceEpoch}.json';
       final file = File('${directory.path}/$fileName');
       
       await file.writeAsString(jsonEncode(data));
@@ -1095,7 +1095,7 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
   Future<void> _exportAsCsv(Map<String, dynamic> data) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final fileName = 'eco_daily_score_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final fileName = 'eco_daily_score_net_export_${DateTime.now().millisecondsSinceEpoch}.csv';
       final file = File('${directory.path}/$fileName');
       
       final csvContent = StringBuffer();

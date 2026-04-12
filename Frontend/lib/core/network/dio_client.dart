@@ -10,7 +10,10 @@
 /// - Error handling
 library;
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../config/api_config.dart';
@@ -42,13 +45,20 @@ class DioClient {
       ),
     );
 
+    // Accept dev tunnel certificates
+    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
+      client.badCertificateCallback = (cert, host, port) => true;
+      return client;
+    };
+
     _setupInterceptors();
   }
 
   /// Setup request/response interceptors
   void _setupInterceptors() {
     dio.interceptors.add(
-      QueuedInterceptorsWrapper(
+      InterceptorsWrapper(
         onRequest: _onRequest,
         onResponse: _onResponse,
         onError: _onError,
@@ -199,15 +209,20 @@ class DioClient {
       if (refreshToken == null) return false;
 
       final response = await Dio().post(
-        '${ApiConfig.baseUrl}/api/auth/refresh/',
+        '${ApiConfig.baseUrl}/users/token/refresh',
         data: {'refresh': refreshToken},
       );
 
       if (response.statusCode == 200) {
         final newAccessToken = response.data['access'];
-        await storage.write(key: 'access_token', value: newAccessToken);
-        AppLogger.info('Token refreshed successfully');
-        return true;
+        if (newAccessToken != null) {
+          await storage.write(key: 'access_token', value: newAccessToken);
+          final expiryTime = DateTime.now().add(const Duration(hours: 24)).toIso8601String();
+          await storage.write(key: 'token_expiry', value: expiryTime);
+          AppLogger.info('Token refreshed successfully');
+          return true;
+        }
+        return false;
       }
       return false;
     } catch (e) {

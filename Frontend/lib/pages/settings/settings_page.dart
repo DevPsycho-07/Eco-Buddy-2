@@ -1,12 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/theme_provider.dart';
-import '../../services/http_client.dart';
 import '../../services/background_services.dart';
-import '../../core/config/api_config.dart';
-import '../../core/utils/app_logger.dart';
 import '../../core/di/service_locator.dart' show sl;
+import '../../core/network/dio_client.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/storage/offline_storage.dart';
 import '../../core/providers/units_provider.dart';
 
@@ -49,31 +49,35 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _saveUnitsToBackend(String units) async {
     try {
-      const baseUrl = ApiConfig.baseUrl;
-      final response = await ApiClient.patch(
-        Uri.parse('$baseUrl/users/profile/'),
-        headers: {'Content-Type': 'application/json'},
-        body: '{"units": "$units"}',
+      await sl<DioClient>().dio.patch(
+        '/users/profile',
+        data: {'units': units},
       );
 
-      if (response.statusCode == 200) {
-        final offlineStorage = sl<OfflineStorage>();
-        final settingsBox = offlineStorage.getSettingsBox();
-        await settingsBox.put('units', units);
-        
-        // Update the units provider to propagate change across the app
-        ref.read(unitsProvider.notifier).setUnits(units);
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Units updated'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        throw Exception('Failed to update units');
+      final offlineStorage = sl<OfflineStorage>();
+      final settingsBox = offlineStorage.getSettingsBox();
+      await settingsBox.put('units', units);
+
+      // Update the units provider to propagate change across the app
+      ref.read(unitsProvider.notifier).setUnits(units);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Units updated'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      AppLogger.error('Failed to save units', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to update units: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       AppLogger.error('Failed to save units', error: e);

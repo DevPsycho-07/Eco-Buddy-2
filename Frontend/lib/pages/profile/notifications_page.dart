@@ -1,8 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import '../../services/http_client.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/dio_client.dart';
 import '../../services/notification_service.dart';
-import '../../core/config/api_config.dart';
 
 class NotificationsPage extends StatefulWidget {
   final bool notificationsEnabled;
@@ -45,27 +45,29 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<void> _saveNotificationSettings() async {
     try {
-      const baseUrl = ApiConfig.baseUrl;
-      
-      final response = await ApiClient.patch(
-        Uri.parse('$baseUrl/users/notification-settings/'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      await sl<DioClient>().dio.patch(
+        '/users/notification-settings',
+        data: {
           'notifications_enabled': _notificationsEnabled,
-        }),
+        },
       );
 
-      if (response.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Notification settings saved!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        throw Exception('Failed to save settings');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notification settings saved!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

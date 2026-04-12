@@ -1,7 +1,7 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../core/config/api_config.dart';
-import 'http_client.dart';
+import '../core/di/service_locator.dart';
+import '../core/network/dio_client.dart';
 
 /// Model for category breakdown data
 class CategoryBreakdown {
@@ -73,13 +73,11 @@ class AnalyticsStats {
   });
 
   factory AnalyticsStats.fromJson(Map<String, dynamic> json) {
-    // Parse categories from by_category map
     final categoriesMap = json['by_category'] as Map<String, dynamic>? ?? {};
     final categories = categoriesMap.entries
         .map((e) => CategoryBreakdown.fromJson(e.key, e.value as Map<String, dynamic>))
         .toList();
 
-    // Parse trend data
     final trendList = json['trend'] as List<dynamic>? ?? [];
     final trend = trendList
         .map((e) => TrendData.fromJson(e as Map<String, dynamic>))
@@ -138,60 +136,44 @@ class ComparisonData {
 
 /// Service for handling analytics API calls
 class AnalyticsService {
+  static final _dio = sl<DioClient>().dio;
   static const String _baseUrl = ApiConfig.analyticsUrl;
 
   /// Get analytics stats for a specific period
   /// [period] can be 'day', 'week', 'month', or 'year'
   static Future<AnalyticsStats> getStats(String period) async {
-    final url = Uri.parse('$_baseUrl/stats/?period=$period');
-    
     try {
-      final response = await ApiClient.get(url);
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return AnalyticsStats.fromJson(data);
-      } else if (response.statusCode == 401) {
+      final response = await _dio.get('$_baseUrl/stats?period=$period');
+
+      return AnalyticsStats.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         throw AnalyticsException(
           'Authentication failed. Please log in again.',
           statusCode: 401,
         );
-      } else if (response.statusCode == 403) {
+      } else if (e.response?.statusCode == 403) {
         throw AnalyticsException(
           'You do not have permission to view analytics.',
           statusCode: 403,
         );
-      } else if (response.statusCode == 404) {
+      } else if (e.response?.statusCode == 404) {
         throw AnalyticsException(
           'Analytics data not found. Please try again later.',
           statusCode: 404,
         );
-      } else if (response.statusCode >= 500) {
+      } else if ((e.response?.statusCode ?? 0) >= 500) {
         throw AnalyticsException(
           'Server error. The analytics service is temporarily unavailable.',
-          statusCode: response.statusCode,
-        );
-      } else {
-        // Try to parse error message from response
-        String errorMessage = 'Failed to load analytics data.';
-        try {
-          final errorData = jsonDecode(response.body);
-          if (errorData is Map && errorData.containsKey('detail')) {
-            errorMessage = errorData['detail'];
-          } else if (errorData is Map && errorData.containsKey('error')) {
-            errorMessage = errorData['error'];
-          }
-        } catch (_) {}
-        
-        throw AnalyticsException(
-          errorMessage,
-          statusCode: response.statusCode,
+          statusCode: e.response?.statusCode,
         );
       }
-    } on http.ClientException {
-      throw AnalyticsException(
-        'Network error. Please check your internet connection and ensure the server is running.',
-      );
+      String errorMessage = 'Failed to load analytics data.';
+      final errorData = e.response?.data;
+      if (errorData is Map) {
+        errorMessage = errorData['detail'] ?? errorData['error'] ?? errorMessage;
+      }
+      throw AnalyticsException(errorMessage, statusCode: e.response?.statusCode);
     } on FormatException {
       throw AnalyticsException(
         'Invalid response from server. Please try again later.',
@@ -206,55 +188,38 @@ class AnalyticsService {
 
   /// Get comparison data (user vs average)
   static Future<ComparisonData> getComparison() async {
-    final url = Uri.parse('$_baseUrl/comparison/');
-    
     try {
-      final response = await ApiClient.get(url);
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return ComparisonData.fromJson(data);
-      } else if (response.statusCode == 401) {
+      final response = await _dio.get('$_baseUrl/comparison');
+
+      return ComparisonData.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         throw AnalyticsException(
           'Authentication failed. Please log in again.',
           statusCode: 401,
         );
-      } else if (response.statusCode == 403) {
+      } else if (e.response?.statusCode == 403) {
         throw AnalyticsException(
           'You do not have permission to view comparison data.',
           statusCode: 403,
         );
-      } else if (response.statusCode == 404) {
+      } else if (e.response?.statusCode == 404) {
         throw AnalyticsException(
           'Comparison data not found. Please try again later.',
           statusCode: 404,
         );
-      } else if (response.statusCode >= 500) {
+      } else if ((e.response?.statusCode ?? 0) >= 500) {
         throw AnalyticsException(
           'Server error. The analytics service is temporarily unavailable.',
-          statusCode: response.statusCode,
-        );
-      } else {
-        // Try to parse error message from response
-        String errorMessage = 'Failed to load comparison data.';
-        try {
-          final errorData = jsonDecode(response.body);
-          if (errorData is Map && errorData.containsKey('detail')) {
-            errorMessage = errorData['detail'];
-          } else if (errorData is Map && errorData.containsKey('error')) {
-            errorMessage = errorData['error'];
-          }
-        } catch (_) {}
-        
-        throw AnalyticsException(
-          errorMessage,
-          statusCode: response.statusCode,
+          statusCode: e.response?.statusCode,
         );
       }
-    } on http.ClientException {
-      throw AnalyticsException(
-        'Network error. Please check your internet connection and ensure the server is running.',
-      );
+      String errorMessage = 'Failed to load comparison data.';
+      final errorData = e.response?.data;
+      if (errorData is Map) {
+        errorMessage = errorData['detail'] ?? errorData['error'] ?? errorMessage;
+      }
+      throw AnalyticsException(errorMessage, statusCode: e.response?.statusCode);
     } on FormatException {
       throw AnalyticsException(
         'Invalid response from server. Please try again later.',

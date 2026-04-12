@@ -9,6 +9,21 @@ using Hangfire.MemoryStorage;
 using EcoBackend.Core.Entities;
 using EcoBackend.Infrastructure.Data;
 
+// Load .env file
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
+if (File.Exists(envPath))
+{
+    foreach (var line in File.ReadAllLines(envPath))
+    {
+        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+            continue;
+        
+        var parts = line.Split('=', 2);
+        if (parts.Length == 2)
+            Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim().Trim('"'));
+    }
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
@@ -57,9 +72,13 @@ builder.Services.AddSwaggerGen(c =>
 // Configure Database (skipped in Testing env — factory registers InMemory instead)
 if (!builder.Environment.IsEnvironment("Testing"))
 {
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
+    var pgPassword = Environment.GetEnvironmentVariable("POSTGRES_PASS");
+    if (!string.IsNullOrEmpty(pgPassword))
+        connectionString += $";Password={pgPassword}";
+
     builder.Services.AddDbContext<EcoDbContext>(options =>
-        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")
-            ?? "Data Source=eco.db",
+        options.UseNpgsql(connectionString,
             b => b.MigrationsAssembly("EcoBackend.Infrastructure")));
 }
 
@@ -202,12 +221,29 @@ app.MapGet("/api", () => new
     }
 });
 
-// Ensure database exists (skip in Testing — InMemory is auto-created by factory)
+// Ensure database exists and seed admin user
 if (!app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<EcoDbContext>();
     context.Database.EnsureCreated();
+
+    // Seed admin superuser if not exists
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    var adminEmail = "admin@eco.com";
+    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    {
+        var admin = new User
+        {
+            UserName = "admin",
+            Email = adminEmail,
+            FirstName = "Admin",
+            LastName = "User",
+            EmailConfirmed = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        await userManager.CreateAsync(admin, "Admin123");
+    }
 }
 
 // Configure recurring background jobs

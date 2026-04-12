@@ -1,7 +1,7 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../core/config/api_config.dart';
-import 'http_client.dart';
+import '../core/di/service_locator.dart';
+import '../core/network/dio_client.dart';
 
 /// Model for user profile/dashboard data
 class UserDashboard {
@@ -174,33 +174,26 @@ class Challenge {
 
 /// Service for dashboard-related API calls
 class DashboardService {
+  static final _dio = sl<DioClient>().dio;
   static const String _usersUrl = ApiConfig.usersUrl;
   static const String _achievementsUrl = ApiConfig.achievementsUrl;
 
   /// Get user profile/dashboard data
   static Future<UserDashboard> getUserProfile() async {
-    final url = Uri.parse('$_usersUrl/profile/');
-
     try {
-      final response = await ApiClient.get(url);
+      final response = await _dio.get('$_usersUrl/profile');
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return UserDashboard.fromJson(data);
-      } else if (response.statusCode == 401) {
+      return UserDashboard.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         throw DashboardException(
           'Authentication failed. Please log in again.',
           statusCode: 401,
         );
-      } else {
-        throw DashboardException(
-          'Failed to load profile. Server returned ${response.statusCode}',
-          statusCode: response.statusCode,
-        );
       }
-    } on http.ClientException {
       throw DashboardException(
-        'Network error. Please check your internet connection and ensure the server is running.',
+        'Failed to load profile. ${e.message}',
+        statusCode: e.response?.statusCode,
       );
     } catch (e) {
       if (e is DashboardException) rethrow;
@@ -210,28 +203,22 @@ class DashboardService {
 
   /// Get user's daily scores
   static Future<List<DailyScore>> getDailyScores({int days = 7}) async {
-    final url = Uri.parse('$_usersUrl/daily-scores/?days=$days');
-
     try {
-      final response = await ApiClient.get(url);
+      final response = await _dio.get('$_usersUrl/daily-scores?days=$days');
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((s) => DailyScore.fromJson(s)).toList();
-      } else if (response.statusCode == 401) {
+      if (response.data == null) return [];
+      final List<dynamic> data = response.data is List ? response.data : [];
+      return data.map((s) => DailyScore.fromJson(s)).toList();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         throw DashboardException(
           'Authentication failed. Please log in again.',
           statusCode: 401,
         );
-      } else {
-        throw DashboardException(
-          'Failed to load daily scores.',
-          statusCode: response.statusCode,
-        );
       }
-    } on http.ClientException {
       throw DashboardException(
-        'Network error. Please check your internet connection.',
+        'Failed to load daily scores. ${e.message}',
+        statusCode: e.response?.statusCode,
       );
     } catch (e) {
       if (e is DashboardException) rethrow;
@@ -241,28 +228,22 @@ class DashboardService {
 
   /// Get user's goals
   static Future<List<UserGoal>> getUserGoals() async {
-    final url = Uri.parse('$_usersUrl/goals/');
-
     try {
-      final response = await ApiClient.get(url);
+      final response = await _dio.get('$_usersUrl/goals');
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((g) => UserGoal.fromJson(g)).toList();
-      } else if (response.statusCode == 401) {
+      if (response.data == null) return [];
+      final List<dynamic> data = response.data is List ? response.data : [];
+      return data.map((g) => UserGoal.fromJson(g)).toList();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
         throw DashboardException(
           'Authentication failed. Please log in again.',
           statusCode: 401,
         );
-      } else {
-        throw DashboardException(
-          'Failed to load goals.',
-          statusCode: response.statusCode,
-        );
       }
-    } on http.ClientException {
       throw DashboardException(
-        'Network error. Please check your internet connection.',
+        'Failed to load goals. ${e.message}',
+        statusCode: e.response?.statusCode,
       );
     } catch (e) {
       if (e is DashboardException) rethrow;
@@ -272,23 +253,11 @@ class DashboardService {
 
   /// Get active challenges
   static Future<List<Challenge>> getActiveChallenges() async {
-    final url = Uri.parse('$_achievementsUrl/challenges/active/');
-
     try {
-      final response = await ApiClient.get(url);
+      final response = await _dio.get('$_achievementsUrl/challenges/active');
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((c) => Challenge.fromJson(c)).toList();
-      } else if (response.statusCode == 401) {
-        throw DashboardException(
-          'Authentication failed. Please log in again.',
-          statusCode: 401,
-        );
-      } else {
-        // Return empty list if endpoint not available
-        return [];
-      }
+      final List<dynamic> data = response.data;
+      return data.map((c) => Challenge.fromJson(c)).toList();
     } catch (e) {
       return [];
     }
@@ -296,22 +265,11 @@ class DashboardService {
 
   /// Get leaderboard
   static Future<List<Map<String, dynamic>>> getLeaderboard({int limit = 10}) async {
-    final url = Uri.parse('$_usersUrl/leaderboard/?limit=$limit');
-
     try {
-      final response = await ApiClient.get(url);
+      final response = await _dio.get('$_usersUrl/leaderboard?limit=$limit');
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
-      } else if (response.statusCode == 401) {
-        throw DashboardException(
-          'Authentication failed. Please log in again.',
-          statusCode: 401,
-        );
-      } else {
-        return [];
-      }
+      final List<dynamic> data = response.data;
+      return data.cast<Map<String, dynamic>>();
     } catch (e) {
       return [];
     }

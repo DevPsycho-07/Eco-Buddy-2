@@ -1,7 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import '../../services/http_client.dart';
-import '../../core/config/api_config.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/dio_client.dart';
 
 class ExportDataPage extends StatefulWidget {
   const ExportDataPage({super.key});
@@ -22,20 +23,17 @@ class _ExportDataPageState extends State<ExportDataPage> {
     });
 
     try {
-      const baseUrl = ApiConfig.baseUrl;
-      
-      final response = await ApiClient.get(
-        Uri.parse('$baseUrl/users/export-data/'),
+      final response = await sl<DioClient>().dio.get(
+        '/users/export-data',
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _exportedData = data;
-        });
-      } else {
-        throw Exception('Failed to export data');
-      }
+      setState(() {
+        _exportedData = response.data;
+      });
+    } on DioException catch (e) {
+      setState(() {
+        _errorMessage = e.message ?? 'Failed to export data';
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();

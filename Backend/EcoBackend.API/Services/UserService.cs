@@ -363,7 +363,11 @@ public class UserService
                 CO2Saved = a.CO2Impact < 0 ? Math.Abs(a.CO2Impact) : 0,
                 Points = a.PointsEarned, a.Notes
             }),
-            goals,
+            goals = goals.Select(g => new
+            {
+                g.Id, g.Title, g.Description, g.TargetValue, g.CurrentValue,
+                g.Unit, g.IsCompleted, g.Deadline, g.CreatedAt
+            }),
             dailyScores = dailyScores.Select(ds => new
             {
                 ds.Id, ds.Date, ds.Score, ds.CO2Saved, ds.Steps

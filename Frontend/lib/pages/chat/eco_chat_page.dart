@@ -1,8 +1,8 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import '../../core/config/api_config.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/dio_client.dart';
 import '../../core/utils/app_logger.dart';
-import '../../services/http_client.dart';
 
 class EcoChatPage extends StatefulWidget {
   const EcoChatPage({super.key});
@@ -68,30 +68,31 @@ class _EcoChatPageState extends State<EcoChatPage> {
       };
       if (_sessionId != null) body['session_id'] = _sessionId;
 
-      AppLogger.info('🌐 POST ${ApiConfig.chatbotUrl}/chat/ (session: $_sessionId)');
+      AppLogger.info('🌐 POST /chatbot/chat (session: $_sessionId)');
 
-      final response = await ApiClient.post(
-        Uri.parse('${ApiConfig.chatbotUrl}/chat/'),
-        body: jsonEncode(body),
-        timeout: const Duration(seconds: 120),
+      final response = await sl<DioClient>().dio.post(
+        '/chatbot/chat',
+        data: body,
+        options: Options(receiveTimeout: const Duration(seconds: 120)),
       );
 
       AppLogger.info('📡 Status: ${response.statusCode}');
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final reply = data['reply'] as String? ?? '';
-        _sessionId = data['session_id'] as String?;
+      final data = response.data as Map<String, dynamic>;
+      final reply = data['reply'] as String? ?? '';
+      _sessionId = data['session_id'] as String?;
 
-        AppLogger.info('💬 Reply (${reply.length} chars), session: $_sessionId');
+      AppLogger.info('💬 Reply (${reply.length} chars), session: $_sessionId');
 
-        setState(() {
-          _messages.add(ChatMessage(text: reply, isUser: false));
-          _isLoading = false;
-        });
-      } else if (response.statusCode == 503) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final error = data['error'] as String? ?? 'EcoBot model is not available yet.';
+      setState(() {
+        _messages.add(ChatMessage(text: reply, isUser: false));
+        _isLoading = false;
+      });
+    } on DioException catch (e) {
+      AppLogger.error('❌ DioException: $e');
+      if (e.response?.statusCode == 503) {
+        final data = e.response?.data as Map<String, dynamic>?;
+        final error = data?['error'] as String? ?? 'EcoBot model is not available yet.';
         AppLogger.error('❌ 503: $error');
         setState(() {
           _messages.add(ChatMessage(
@@ -101,10 +102,10 @@ class _EcoChatPageState extends State<EcoChatPage> {
           _isLoading = false;
         });
       } else {
-        AppLogger.error('❌ HTTP ${response.statusCode}: ${response.body}');
+        AppLogger.error('❌ HTTP ${e.response?.statusCode}: ${e.response?.data}');
         setState(() {
           _messages.add(ChatMessage(
-            text: 'Something went wrong (${response.statusCode}). Please try again.',
+            text: 'Something went wrong (${e.response?.statusCode}). Please try again.',
             isUser: false,
           ));
           _isLoading = false;

@@ -1,18 +1,18 @@
-import 'dart:convert';
-import 'http_client.dart';
+import 'package:dio/dio.dart';
 import '../core/config/api_config.dart';
+import '../core/di/service_locator.dart';
+import '../core/network/dio_client.dart';
 
 /// Service for managing user's eco profile (one-time setup data)
 class EcoProfileService {
+  static final _dio = sl<DioClient>().dio;
   static const String baseUrl = ApiConfig.baseUrl;
 
   /// Check if user has completed eco profile setup
   static Future<bool> hasCompletedSetup() async {
     try {
-      final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/profile/'),
-      );
-      return response.statusCode == 200;
+      await _dio.get('$baseUrl/predictions/profile');
+      return true;
     } catch (e) {
       return false;
     }
@@ -21,14 +21,8 @@ class EcoProfileService {
   /// Get user's eco profile
   static Future<Map<String, dynamic>?> getProfile() async {
     try {
-      final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/profile/'),
-      );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-      return null;
+      final response = await _dio.get('$baseUrl/predictions/profile');
+      return response.data;
     } catch (e) {
       return null;
     }
@@ -51,9 +45,9 @@ class EcoProfileService {
     required String socialActivity,
   }) async {
     try {
-      final response = await ApiClient.post(
-        Uri.parse('$baseUrl/predictions/profile/'),
-        body: jsonEncode({
+      final response = await _dio.post(
+        '$baseUrl/predictions/profile',
+        data: {
           'household_size': householdSize,
           'age_group': ageGroup,
           'lifestyle_type': lifestyleType,
@@ -67,21 +61,25 @@ class EcoProfileService {
           'composting_practiced': compostingPracticed,
           'waste_bag_size': wasteBagSize,
           'social_activity': socialActivity,
-        }),
+        },
       );
 
       if (response.statusCode == 201) {
         return {
           'success': true,
-          'data': jsonDecode(response.body),
+          'data': response.data,
         };
       } else {
-        final error = jsonDecode(response.body);
         return {
           'success': false,
-          'error': error['error'] ?? 'Failed to create profile',
+          'error': response.data?['error'] ?? 'Failed to create profile',
         };
       }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': e.response?.data?['error'] ?? e.message ?? 'Failed to create profile',
+      };
     } catch (e) {
       return {
         'success': false,
@@ -122,23 +120,27 @@ class EcoProfileService {
       if (wasteBagSize != null) body['waste_bag_size'] = wasteBagSize;
       if (socialActivity != null) body['social_activity'] = socialActivity;
 
-      final response = await ApiClient.put(
-        Uri.parse('$baseUrl/predictions/profile/'),
-        body: jsonEncode(body),
+      final response = await _dio.put(
+        '$baseUrl/predictions/profile',
+        data: body,
       );
 
       if (response.statusCode == 200) {
         return {
           'success': true,
-          'data': jsonDecode(response.body),
+          'data': response.data,
         };
       } else {
-        final error = jsonDecode(response.body);
         return {
           'success': false,
-          'error': error['error'] ?? 'Failed to update profile',
+          'error': response.data?['error'] ?? 'Failed to update profile',
         };
       }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': e.response?.data?['error'] ?? e.message ?? 'Failed to update profile',
+      };
     } catch (e) {
       return {
         'success': false,
@@ -150,14 +152,8 @@ class EcoProfileService {
   /// Get dashboard data
   static Future<Map<String, dynamic>?> getDashboard() async {
     try {
-      final response = await ApiClient.get(
-        Uri.parse('$baseUrl/predictions/dashboard/'),
-      );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-      return null;
+      final response = await _dio.get('$baseUrl/predictions/dashboard');
+      return response.data;
     } catch (e) {
       return null;
     }
@@ -166,15 +162,11 @@ class EcoProfileService {
   /// Get eco score prediction
   static Future<Map<String, dynamic>?> getPrediction() async {
     try {
-      final response = await ApiClient.post(
-        Uri.parse('$baseUrl/predictions/predict/'),
-        body: jsonEncode({}),
+      final response = await _dio.post(
+        '$baseUrl/predictions/predict',
+        data: {},
       );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-      return null;
+      return response.data;
     } catch (e) {
       return null;
     }

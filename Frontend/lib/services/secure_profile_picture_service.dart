@@ -50,7 +50,7 @@ class SecureProfilePictureService {
       });
 
       final response = await _dio.post(
-        '$baseUrl/users/profile-picture/',
+        '$baseUrl/users/profile-picture',
         data: formData,
         options: Options(
           headers: {
@@ -106,8 +106,8 @@ class SecureProfilePictureService {
       }
       
       final url = userId != null
-          ? '$baseUrl/users/profile-picture/$userId/'
-          : '$baseUrl/users/profile-picture/';
+          ? '$baseUrl/users/profile-picture/$userId'
+          : '$baseUrl/users/profile-picture';
 
       AppLogger.info('Fetching profile picture from: $url');
 
@@ -164,7 +164,7 @@ class SecureProfilePictureService {
       AppLogger.info('Deleting profile picture');
 
       final response = await _dio.delete(
-        '$baseUrl/users/profile-picture/',
+        '$baseUrl/users/profile-picture',
       );
 
       if (response.statusCode == 200) {
@@ -214,6 +214,6 @@ class SecureProfilePictureService {
   /// final url = SecureProfilePictureService.getProfilePictureUrl(userId);
   /// ```
   static String getProfilePictureUrl(int userId) {
-    return '$baseUrl/users/profile-picture/$userId/';
+    return '$baseUrl/users/profile-picture/$userId';
   }
 }

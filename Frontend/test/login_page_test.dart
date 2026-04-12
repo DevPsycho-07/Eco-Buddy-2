@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:eco_daily_score_dotnet/pages/auth/login_page.dart';
+import 'package:eco_daily_score_net/pages/auth/login_page.dart';
 
 void main() {
   group('LoginPage Widget Tests', () {

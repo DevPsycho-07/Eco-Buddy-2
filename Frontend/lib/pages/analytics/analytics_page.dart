@@ -238,7 +238,9 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                       selected: isSelected,
                       selectedColor: Colors.green,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.white,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                       onSelected: (selected) {

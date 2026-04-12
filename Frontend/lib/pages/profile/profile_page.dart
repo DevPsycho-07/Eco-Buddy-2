@@ -1,13 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import 'dart:convert';
+
 import 'dart:async';
 import 'package:go_router/go_router.dart';
-import '../../services/http_client.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/dio_client.dart';
+import '../../core/widgets/secure_profile_picture_avatar.dart';
 import '../../services/auth_service.dart';
 import '../../services/guest_service.dart';
-import '../../core/config/api_config.dart';
-import '../../core/widgets/secure_profile_picture_avatar.dart';
+import '../../core/routing/app_router.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -52,32 +53,23 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     
     try {
-      const baseUrl = ApiConfig.baseUrl;
-      
-      // Fetch user profile using ApiClient (handles token refresh on 401)
-      final profileResponse = await ApiClient.get(
-        Uri.parse('$baseUrl/users/profile/'),
+      // Fetch user profile using DioClient (handles token refresh on 401)
+      final profileResponse = await sl<DioClient>().dio.get(
+        '/users/profile',
       );
 
-      if (profileResponse.statusCode != 200) {
-        throw Exception(
-            'Failed to load profile. Status: ${profileResponse.statusCode}');
-      }
+      final profileData = profileResponse.data;
 
-      final profileData = jsonDecode(profileResponse.body);
-      
       // Note: profile_picture is not used directly anymore
       // SecureProfilePictureAvatar widget fetches decrypted image via API
 
       // Fetch user rank
-      final rankResponse = await ApiClient.get(
-        Uri.parse('$baseUrl/users/my-rank/'),
-      );
-
-      if (rankResponse.statusCode == 200) {
-        final rankData = jsonDecode(rankResponse.body);
-        profileData['rank'] = rankData['rank'];
-      } else {
+      try {
+        final rankResponse = await sl<DioClient>().dio.get(
+          '/users/my-rank',
+        );
+        profileData['rank'] = rankResponse.data['rank'];
+      } on DioException {
         profileData['rank'] = null;
       }
 
@@ -535,17 +527,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          final navigator = context;
                           await GuestService.endGuestSession();
-                          if (mounted) {
-                            // Use post-frame callback to avoid navigating during widget disposal
-                            SchedulerBinding.instance.addPostFrameCallback((_) {
-                              if (mounted) {
-                                // Use go_router to navigate and clear the stack
-                                navigator.go('/welcome');
-                              }
-                            });
-                          }
+                          AppRouter.updateAuthState(false);
                         },
                         icon: const Icon(Icons.person_add),
                         label: const Text('Create Account'),
@@ -865,35 +848,17 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           OutlinedButton(
             onPressed: () async {
-              final navigator = context;
               Navigator.pop(context); // Close dialog
               await GuestService.endGuestSession();
-              if (mounted) {
-                // Use post-frame callback to avoid navigating during widget disposal
-                SchedulerBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    // Use go_router to navigate and clear the stack
-                    navigator.go('/welcome');
-                  }
-                });
-              }
+              AppRouter.updateAuthState(false);
             },
             child: const Text('Exit'),
           ),
           ElevatedButton(
             onPressed: () async {
-              final navigator = context;
               Navigator.pop(context); // Close dialog
               await GuestService.endGuestSession();
-              if (mounted) {
-                // Use post-frame callback to avoid navigating during widget disposal
-                SchedulerBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    // Use go_router to navigate and clear the stack
-                    navigator.go('/welcome');
-                  }
-                });
-              }
+              AppRouter.updateAuthState(false);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,

@@ -1,5 +1,4 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import '../core/config/api_config.dart';
 import '../core/utils/app_logger.dart';
 
@@ -9,26 +8,20 @@ class EmailService {
   /// Send password reset email
   static Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/users/forgot-password/'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email,
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await Dio().post(
+        '$baseUrl/users/forgot-password',
+        data: {'email': email},
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
 
       if (response.statusCode == 200) {
         return {
           'success': true,
           'message': 'Password reset email sent. Please check your inbox.',
-        };
-      } else if (response.statusCode == 400) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': data['error'] ?? 'Invalid email address',
         };
       } else {
         return {
@@ -36,6 +29,19 @@ class EmailService {
           'error': 'Failed to send password reset email',
         };
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        final data = e.response?.data;
+        return {
+          'success': false,
+          'error': data?['error'] ?? 'Invalid email address',
+        };
+      }
+      AppLogger.error('Error in forgotPassword: $e');
+      return {
+        'success': false,
+        'error': e.message ?? 'Failed to send password reset email',
+      };
     } catch (e) {
       AppLogger.error('Error in forgotPassword: $e');
       return {
@@ -53,29 +59,25 @@ class EmailService {
     required String newPasswordConfirm,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/users/reset-password/'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
+      final response = await Dio().post(
+        '$baseUrl/users/reset-password',
+        data: {
           'email': email,
           'token': token,
           'new_password': newPassword,
           'new_password_confirm': newPasswordConfirm,
-        }),
-      ).timeout(const Duration(seconds: 10));
+        },
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
 
       if (response.statusCode == 200) {
         return {
           'success': true,
           'message': 'Password reset successfully',
-        };
-      } else if (response.statusCode == 400) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': data['error'] ?? 'Invalid request',
         };
       } else {
         return {
@@ -83,6 +85,19 @@ class EmailService {
           'error': 'Failed to reset password',
         };
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        final data = e.response?.data;
+        return {
+          'success': false,
+          'error': data?['error'] ?? 'Invalid request',
+        };
+      }
+      AppLogger.error('Error in resetPassword: $e');
+      return {
+        'success': false,
+        'error': e.message ?? 'Failed to reset password',
+      };
     } catch (e) {
       AppLogger.error('Error in resetPassword: $e');
       return {
@@ -98,27 +113,23 @@ class EmailService {
     required String token,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/users/verify-email/'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
+      final response = await Dio().post(
+        '$baseUrl/users/verify-email',
+        data: {
           'email': email,
           'token': token,
-        }),
-      ).timeout(const Duration(seconds: 10));
+        },
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
 
       if (response.statusCode == 200) {
         return {
           'success': true,
           'message': 'Email verified successfully',
-        };
-      } else if (response.statusCode == 400) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': data['error'] ?? 'Invalid verification link',
         };
       } else {
         return {
@@ -126,6 +137,19 @@ class EmailService {
           'error': 'Verification link expired or invalid',
         };
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        final data = e.response?.data;
+        return {
+          'success': false,
+          'error': data?['error'] ?? 'Invalid verification link',
+        };
+      }
+      AppLogger.error('Error in verifyEmail: $e');
+      return {
+        'success': false,
+        'error': e.message ?? 'Verification failed',
+      };
     } catch (e) {
       AppLogger.error('Error in verifyEmail: $e');
       return {
@@ -138,26 +162,20 @@ class EmailService {
   /// Resend verification email
   static Future<Map<String, dynamic>> resendVerificationEmail(String email) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/users/resend-verification-email/'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email,
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await Dio().post(
+        '$baseUrl/users/resend-verification-email',
+        data: {'email': email},
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
 
       if (response.statusCode == 200) {
         return {
           'success': true,
           'message': 'Verification email sent. Please check your inbox.',
-        };
-      } else if (response.statusCode == 400) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': false,
-          'error': data['error'] ?? 'Could not send verification email',
         };
       } else {
         return {
@@ -165,6 +183,19 @@ class EmailService {
           'error': 'Failed to resend verification email',
         };
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        final data = e.response?.data;
+        return {
+          'success': false,
+          'error': data?['error'] ?? 'Could not send verification email',
+        };
+      }
+      AppLogger.error('Error in resendVerificationEmail: $e');
+      return {
+        'success': false,
+        'error': e.message ?? 'Failed to resend verification email',
+      };
     } catch (e) {
       AppLogger.error('Error in resendVerificationEmail: $e');
       return {

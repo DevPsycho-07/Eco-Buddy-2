@@ -55,7 +55,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
 
     // ========== Get Notifications ==========
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task GetNotifications_ShouldReturnPaginatedList()
     {
         var response = await _client.GetAsync("/api/notifications?page=1&limit=10");
@@ -66,7 +66,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
         Assert.Contains("total", content);
     }
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task GetNotifications_WithDefaultPagination_ShouldWork()
     {
         var response = await _client.GetAsync("/api/notifications");
@@ -75,7 +75,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
 
     // ========== Device Token ==========
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task RegisterDeviceToken_ShouldSucceed()
     {
         var response = await _client.PostAsJsonAsync("/api/notifications/device-token", new
@@ -90,7 +90,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
         Assert.Contains("registered", content);
     }
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task DeactivateDeviceToken_ShouldReturn404_ForNonexistentToken()
     {
         var request = new HttpRequestMessage(HttpMethod.Delete, "/api/notifications/device-token")
@@ -102,7 +102,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task RegisterAndDeactivateDeviceToken_ShouldWork()
     {
         // Register
@@ -123,7 +123,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
 
     // ========== Mark as Read ==========
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task MarkAsRead_ShouldReturn404_ForNonexistentNotification()
     {
         var response = await _client.PostAsJsonAsync("/api/notifications/read", new
@@ -134,7 +134,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task MarkAllAsRead_ShouldSucceed()
     {
         var response = await _client.PostAsync("/api/notifications/read-all", null);
@@ -146,7 +146,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
 
     // ========== Delete Notification ==========
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task DeleteNotification_ShouldReturn404_ForNonexistent()
     {
         var response = await _client.DeleteAsync("/api/notifications/99999");
@@ -155,7 +155,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
 
     // ========== Test Notification (Development) ==========
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task SendTestNotification_ShouldWork_InDevelopment()
     {
         var response = await _client.PostAsJsonAsync("/api/notifications/test", new
@@ -173,7 +173,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
 
     // ========== Unauthorized Access ==========
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task GetNotifications_ShouldReturn401_WhenNotAuthenticated()
     {
         var unauthClient = _factory.CreateClient();
@@ -181,7 +181,7 @@ public class NotificationsEndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [Fact(Skip = "NotificationsController has been removed; notification dispatch migrated into NotificationService")]
     public async Task RegisterDeviceToken_ShouldReturn401_WhenNotAuthenticated()
     {
         var unauthClient = _factory.CreateClient();

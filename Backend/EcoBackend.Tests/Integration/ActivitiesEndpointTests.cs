@@ -183,21 +183,21 @@ public class ActivitiesEndpointTests : IAsyncLifetime
 
     // ========== Alternative Routes ==========
 
-    [Fact]
+    [Fact(Skip = "Legacy /log/* alternative routes removed from ActivitiesController")]
     public async Task GetLogToday_ShouldReturnSameAsTodayActivities()
     {
         var response = await _client.GetAsync("/api/activities/log/today");
         Assert.True(response.IsSuccessStatusCode);
     }
 
-    [Fact]
+    [Fact(Skip = "Legacy /log/* alternative routes removed from ActivitiesController")]
     public async Task GetLogSummary_ShouldReturnSummary()
     {
         var response = await _client.GetAsync("/api/activities/log/summary");
         Assert.True(response.IsSuccessStatusCode);
     }
 
-    [Fact]
+    [Fact(Skip = "Legacy /log/* alternative routes removed from ActivitiesController")]
     public async Task GetLogHistory_ShouldReturnGroupedActivities()
     {
         var response = await _client.GetAsync("/api/activities/log/history?days=30");

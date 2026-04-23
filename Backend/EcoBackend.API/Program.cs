@@ -9,6 +9,10 @@ using Hangfire.MemoryStorage;
 using EcoBackend.Core.Entities;
 using EcoBackend.Infrastructure.Data;
 
+// Allow DateTime with Kind=Unspecified to be mapped to PostgreSQL 'timestamp with time zone'
+// (legacy Npgsql 5.x behavior; avoids 500s from `new DateTime(y,m,d)` values across services).
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // Load .env file
 var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
 if (File.Exists(envPath))
@@ -169,6 +173,7 @@ if (app.Environment.IsDevelopment())
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Eco Daily Score API v1");
         c.RoutePrefix = string.Empty; // Serve Swagger UI at root
+        c.EnableFilter();
     });
 }
 

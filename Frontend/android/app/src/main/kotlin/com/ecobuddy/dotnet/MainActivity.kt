@@ -1,4 +1,4 @@
-package com.ecobuddy.dotnet
+package com.example.eco_daily_score
 
 import io.flutter.embedding.android.FlutterActivity
 

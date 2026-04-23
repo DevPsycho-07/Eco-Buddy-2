@@ -1,0 +1,158 @@
+Summary
+  Generated on: 12-04-2026 - 04:17:38 PM
+  Coverage date: 12-04-2026 - 04:16:34 PM
+  Parser: Cobertura
+  Assemblies: 3
+  Classes: 132
+  Files: 45
+  Line coverage: 22.7%
+  Covered lines: 3426
+  Uncovered lines: 11624
+  Coverable lines: 15050
+  Total lines: 18742
+  Branch coverage: 22.4% (285 of 1270)
+  Covered branches: 285
+  Total branches: 1270
+  Method coverage: 67.8% (849 of 1252)
+  Full method coverage: 61% (764 of 1252)
+  Covered methods: 849
+  Fully covered methods: 764
+  Total methods: 1252
+
+EcoBackend.API                                                      54.6%
+  EcoBackend.API.Controllers.AchievementsController                 82.4%
+  EcoBackend.API.Controllers.ActivitiesController                   79.5%
+  EcoBackend.API.Controllers.AnalyticsController                    94.4%
+  EcoBackend.API.Controllers.ChatbotController                         0%
+  EcoBackend.API.Controllers.PredictionsController                  85.9%
+  EcoBackend.API.Controllers.TravelController                       82.5%
+  EcoBackend.API.Controllers.UsersController                        40.8%
+  EcoBackend.API.DTOs.ActivityCategoryDto                            100%
+  EcoBackend.API.DTOs.ActivityCreateDto                              100%
+  EcoBackend.API.DTOs.ActivityDto                                      0%
+  EcoBackend.API.DTOs.ActivitySummaryDto                             100%
+  EcoBackend.API.DTOs.ActivityTypeDto                                100%
+  EcoBackend.API.DTOs.AuthResponseDto                                100%
+  EcoBackend.API.DTOs.BadgeDto                                       100%
+  EcoBackend.API.DTOs.BatchLocationPointsDto                         100%
+  EcoBackend.API.DTOs.CategoryStats                                    0%
+  EcoBackend.API.DTOs.ChallengeDto                                     0%
+  EcoBackend.API.DTOs.ChatbotStatusDto                                 0%
+  EcoBackend.API.DTOs.ChatMessageDto                                   0%
+  EcoBackend.API.DTOs.ChatRequestDto                                   0%
+  EcoBackend.API.DTOs.ChatResponseDto                                  0%
+  EcoBackend.API.DTOs.ChatSessionDetailDto                             0%
+  EcoBackend.API.DTOs.ChatSessionListDto                               0%
+  EcoBackend.API.DTOs.CreateDailyScoreDto                            100%
+  EcoBackend.API.DTOs.CreateLocationPointDto                         100%
+  EcoBackend.API.DTOs.CreateTripDto                                  100%
+  EcoBackend.API.DTOs.CreateUserGoalDto                              100%
+  EcoBackend.API.DTOs.DailyLogDto                                    100%
+  EcoBackend.API.DTOs.DailyLogInputDto                               100%
+  EcoBackend.API.DTOs.DailyScoreDto                                  100%
+  EcoBackend.API.DTOs.DashboardTodaySummary                            0%
+  EcoBackend.API.DTOs.DashboardWeekTrend                               0%
+  EcoBackend.API.DTOs.DeactivateDeviceTokenDto                         0%
+  EcoBackend.API.DTOs.DeletedSessionsDto                               0%
+  EcoBackend.API.DTOs.DeviceTokenDto                                   0%
+  EcoBackend.API.DTOs.ForgotPasswordDto                              100%
+  EcoBackend.API.DTOs.GoogleSignInDto                                  0%
+  EcoBackend.API.DTOs.JoinChallengeDto                                 0%
+  EcoBackend.API.DTOs.LeaderboardDto                                 100%
+  EcoBackend.API.DTOs.LocationPointDto                               100%
+  EcoBackend.API.DTOs.LoginDto                                       100%
+  EcoBackend.API.DTOs.LogoutDto                                      100%
+  EcoBackend.API.DTOs.MarkNotificationReadDto                          0%
+  EcoBackend.API.DTOs.ModelInfoDto                                   100%
+  EcoBackend.API.DTOs.ModeStatsDto                                     0%
+  EcoBackend.API.DTOs.NotificationDto                                  0%
+  EcoBackend.API.DTOs.NotificationListResponseDto                      0%
+  EcoBackend.API.DTOs.NotificationPreferenceDto                        0%
+  EcoBackend.API.DTOs.NotificationSettingsDto                        100%
+  EcoBackend.API.DTOs.PredictionDashboardDto                         100%
+  EcoBackend.API.DTOs.PredictionInputDto                             100%
+  EcoBackend.API.DTOs.PredictionLogDto                                 0%
+  EcoBackend.API.DTOs.PredictionOutputDto                              0%
+  EcoBackend.API.DTOs.PredictionTripCreateDto                        100%
+  EcoBackend.API.DTOs.PredictionTripDto                              100%
+  EcoBackend.API.DTOs.RefreshTokenDto                                100%
+  EcoBackend.API.DTOs.RegisterDeviceTokenDto                           0%
+  EcoBackend.API.DTOs.ResendVerificationEmailDto                       0%
+  EcoBackend.API.DTOs.ResetPasswordDto                                 0%
+  EcoBackend.API.DTOs.ScoreCategoryInfo                              100%
+  EcoBackend.API.DTOs.SendTestNotificationDto                          0%
+  EcoBackend.API.DTOs.TipDto                                         100%
+  EcoBackend.API.DTOs.TravelSummaryDto                                 0%
+  EcoBackend.API.DTOs.TripDto                                        100%
+  EcoBackend.API.DTOs.TripStatsDto                                   100%
+  EcoBackend.API.DTOs.UpdateDailyScoreDto                              0%
+  EcoBackend.API.DTOs.UpdateStepsDto                                 100%
+  EcoBackend.API.DTOs.UpdateTripDto                                  100%
+  EcoBackend.API.DTOs.UpdateUserChallengeDto                         100%
+  EcoBackend.API.DTOs.UpdateUserGoalDto                                0%
+  EcoBackend.API.DTOs.UserBadgeDto                                     0%
+  EcoBackend.API.DTOs.UserChallengeDto                                 0%
+  EcoBackend.API.DTOs.UserDto                                        100%
+  EcoBackend.API.DTOs.UserEcoProfileDto                              100%
+  EcoBackend.API.DTOs.UserGoalDto                                    100%
+  EcoBackend.API.DTOs.UserPrivacySettingsDto                         100%
+  EcoBackend.API.DTOs.UserProfileUpdateDto                           100%
+  EcoBackend.API.DTOs.UserRegistrationDto                            100%
+  EcoBackend.API.DTOs.VerifyEmailDto                                   0%
+  EcoBackend.API.DTOs.WeeklyLogDto                                   100%
+  EcoBackend.API.Services.AchievementService                        51.5%
+  EcoBackend.API.Services.ActivityService                           45.3%
+  EcoBackend.API.Services.AnalyticsService                          83.9%
+  EcoBackend.API.Services.BackgroundJobService                         0%
+  EcoBackend.API.Services.ChatbotService                               0%
+  EcoBackend.API.Services.DailyScoreService                         57.6%
+  EcoBackend.API.Services.EcoScoreModelLoaderService                   0%
+  EcoBackend.API.Services.EcoScorePredictorService                    30%
+  EcoBackend.API.Services.EmailService                                84%
+  EcoBackend.API.Services.GoalService                                 65%
+  EcoBackend.API.Services.LlamaModelLoaderService                    100%
+  EcoBackend.API.Services.LlamaModelService                           45%
+  EcoBackend.API.Services.NotificationService                       64.5%
+  EcoBackend.API.Services.PredictionService                         54.3%
+  EcoBackend.API.Services.ProfilePictureEncryptionService           18.5%
+  EcoBackend.API.Services.TravelService                             63.7%
+  EcoBackend.API.Services.UserService                               56.6%
+  HangfireAuthorizationFilter                                          0%
+  Program                                                           65.3%
+
+EcoBackend.Core                                                     67.7%
+  EcoBackend.Core.Entities.Activity                                    0%
+  EcoBackend.Core.Entities.ActivityCategory                          100%
+  EcoBackend.Core.Entities.ActivityType                              100%
+  EcoBackend.Core.Entities.Badge                                     100%
+  EcoBackend.Core.Entities.Challenge                                   0%
+  EcoBackend.Core.Entities.ChatMessage                                 0%
+  EcoBackend.Core.Entities.ChatSession                                 0%
+  EcoBackend.Core.Entities.DailyLog                                  100%
+  EcoBackend.Core.Entities.DailyScore                                100%
+  EcoBackend.Core.Entities.DeviceToken                               100%
+  EcoBackend.Core.Entities.EmailVerificationToken                   88.8%
+  EcoBackend.Core.Entities.LocationPoint                            92.3%
+  EcoBackend.Core.Entities.MonthlyReport                               0%
+  EcoBackend.Core.Entities.Notification                             90.9%
+  EcoBackend.Core.Entities.NotificationPreference                      0%
+  EcoBackend.Core.Entities.PasswordResetToken                       87.5%
+  EcoBackend.Core.Entities.PredictionLog                               0%
+  EcoBackend.Core.Entities.PredictionTrip                            100%
+  EcoBackend.Core.Entities.RefreshToken                             81.8%
+  EcoBackend.Core.Entities.Tip                                      87.5%
+  EcoBackend.Core.Entities.TravelSummary                            92.8%
+  EcoBackend.Core.Entities.Trip                                      100%
+  EcoBackend.Core.Entities.User                                     79.4%
+  EcoBackend.Core.Entities.UserBadge                                   0%
+  EcoBackend.Core.Entities.UserChallenge                               0%
+  EcoBackend.Core.Entities.UserEcoProfile                            100%
+  EcoBackend.Core.Entities.UserGoal                                  100%
+  EcoBackend.Core.Entities.WeeklyLog                                 100%
+  EcoBackend.Core.Entities.WeeklyReport                                0%
+
+EcoBackend.Infrastructure                                            2.5%
+  EcoBackend.Infrastructure.Data.EcoDbContext                       98.7%
+  EcoBackend.Infrastructure.Migrations.EcoDbContextModelSnapshot       0%
+  EcoBackend.Infrastructure.Migrations.InitialPostgres                 0%
+  EcoBackend.Infrastructure.Migrations.SeedCategoriesTypesAndTips      0%

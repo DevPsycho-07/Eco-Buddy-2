@@ -112,9 +112,18 @@ class Activity {
   });
 
   factory Activity.fromJson(Map<String, dynamic> json) {
+    // Handle activity_type being either an int or a Map
+    dynamic activityTypeRaw = json['activity_type'];
+    int activityTypeId;
+    if (activityTypeRaw is Map) {
+      activityTypeId = activityTypeRaw['id'] ?? 0;
+    } else {
+      activityTypeId = activityTypeRaw ?? 0;
+    }
+    
     return Activity(
       id: json['id'] ?? 0,
-      activityTypeId: json['activity_type'] ?? 0,
+      activityTypeId: activityTypeId,
       activityTypeName: json['activity_type_name'] ?? '',
       categoryName: json['category_name'] ?? '',
       quantity: (json['quantity'] ?? 1).toDouble(),

@@ -1,19 +1,21 @@
-# Eco Daily Score
+# 🌱 Eco Daily Score
 
-A comprehensive eco-friendly activity tracking application that helps users monitor their carbon footprint, earn achievements, and compete on leaderboards.
+A full-stack sustainability app that helps users track their carbon footprint, log eco-friendly activities, earn achievements, and get AI-powered guidance toward greener habits.
 
 ## 🎯 Project Status
 
-**Backend**: 99% Complete (Production Ready)
-- ✅ 126 API endpoints implemented
-- ✅ 12 services with clean architecture
-- ✅ 159/159 tests passing (>70% coverage)
+**Backend** — Production Ready
+- ✅ 129 API endpoints across 7 controllers
+- ✅ 15 services (Clean Architecture)
+- ✅ AI chatbot (local LLaMA inference)
+- ✅ ML eco-score predictions (ONNX Runtime)
 - ✅ Email & push notifications
 - ✅ Background jobs (Hangfire)
-- ✅ Comprehensive documentation
-- ⏳ ML integration (13 stub endpoints)
+- ✅ 159 tests (145 passing, 14 skipped)
 
-**Last Updated**: February 16, 2026
+**Frontend** — Flutter mobile app with Riverpod state management
+
+**Last Updated**: May 15, 2026
 
 ---
 
@@ -21,24 +23,26 @@ A comprehensive eco-friendly activity tracking application that helps users moni
 
 ```
 .
-├── Backend/                    # ASP.NET Core 8.0 Web API
-│   ├── EcoBackend.API/        # API Controllers & Endpoints
-│   ├── EcoBackend.Core/       # Domain Entities & Interfaces
-│   └── EcoBackend.Infrastructure/  # Data Access & Migrations
+├── Backend/                         # ASP.NET Core (.NET 10) Web API
+│   ├── EcoBackend.API/             # Controllers, services, DTOs
+│   ├── EcoBackend.Core/            # Domain entities & interfaces
+│   ├── EcoBackend.Infrastructure/  # EF Core DbContext & migrations
+│   └── EcoBackend.Tests/           # Integration & service tests
 │
-└── Frontend/                  # Flutter Mobile Application
+└── Frontend/                        # Flutter mobile application
     └── lib/
-        ├── pages/            # UI Screens
-        ├── services/         # API & Business Logic
-        └── core/             # Configuration & Constants
+        ├── pages/                  # UI screens
+        ├── services/               # API & business logic
+        └── core/                   # Configuration & constants
 ```
 
 ## 🚀 Features
 
 ### User Management ✅
-- User registration and authentication with JWT tokens
+- Registration and authentication with JWT tokens
 - Refresh token rotation for enhanced security
-- Profile management with encrypted profile pictures (AES-256)
+- Google Sign-In support
+- Profile management with encrypted profile pictures (AES-256-CBC)
 - Email verification and password reset via email
 - Privacy settings and notification preferences
 - Data export (GDPR compliance)
@@ -55,7 +59,7 @@ A comprehensive eco-friendly activity tracking application that helps users moni
 - Unlock badges based on activities
 - Challenge system with progress tracking
 - Individual and multiplayer challenges
-- Achievement summaries and statistics
+- Streak tracking
 - Points and experience system
 - Leaderboards and rankings
 
@@ -69,12 +73,21 @@ A comprehensive eco-friendly activity tracking application that helps users moni
 
 ### Travel Tracking ✅
 - Multi-modal transport tracking
-- GPS location point tracking
-- Batch location uploads
+- GPS location point tracking with batch uploads
 - Carbon footprint calculation per trip
 - Travel history and statistics
 - Daily and weekly travel summaries
 - Steps tracking integration
+
+### AI Chatbot ✅
+- Conversational eco-assistant powered by a local LLaMA model (LLamaSharp)
+- Persistent chat sessions and history
+- Runs fully offline — no external API calls
+
+### ML Predictions ✅
+- Eco-score prediction via an ONNX model (`eco_score_model.onnx`)
+- User eco-profile and daily-log feature engineering
+- Carbon footprint forecasting
 
 ### Notifications ✅
 - Push notifications via Firebase FCM
@@ -91,47 +104,38 @@ A comprehensive eco-friendly activity tracking application that helps users moni
 - Token cleanup (daily 3 AM UTC)
 - Hangfire dashboard for monitoring
 
-### ML Predictions ⏳
-- Carbon footprint predictions (stub)
-- Eco-score forecasting (stub)
-- Personalized recommendations (stub)
-- 13 ML endpoints ready for implementation
-
 ## 🛠️ Technologies
 
-### Backend (ASP.NET Core)
-- **Framework**: ASP.NET Core 8.0
-- **Database**: SQLite with Entity Framework Core
-- **ORM**: Entity Framework Core 8.0
-- **Authentication**: JWT Bearer Tokens + Refresh Tokens
-- **Identity**: ASP.NET Core Identity
+### Backend
+- **Framework**: ASP.NET Core (.NET 10)
+- **Database**: PostgreSQL with Entity Framework Core 9
+- **Authentication**: JWT Bearer tokens + refresh tokens, ASP.NET Core Identity, Google Sign-In
 - **Background Jobs**: Hangfire
-- **Email**: MailKit 4.3.0
+- **Email**: MailKit
 - **Push Notifications**: Firebase Admin SDK
-- **Testing**: xUnit 2.6.3 (159/159 tests passing)
+- **AI Chatbot**: LLamaSharp (local GGUF model inference)
+- **ML**: Microsoft.ML.OnnxRuntime
+- **Testing**: xUnit
 - **API Documentation**: Swagger/OpenAPI
-- **Status**: 99% Complete - Production Ready
 
 ### Frontend (Flutter)
-- **Framework**: Flutter
-- **State Management**: StatefulWidget
-- **HTTP Client**: http package
-- **Storage**: flutter_secure_storage
-- **Image Handling**: image_picker
+- **Framework**: Flutter (Dart SDK ^3.8.1)
+- **State Management**: Riverpod
+- **Dependency Injection**: GetIt
+- **HTTP Client**: Dio
+- **Local Storage**: Hive, flutter_secure_storage, shared_preferences
+- **Navigation**: go_router
+- **Push Notifications**: Firebase Messaging
+- **Auth**: Google Sign-In
+- **UI**: Lottie, shimmer, flutter_animate
 
 ---
 
 ## 📚 Documentation
 
-### Backend Documentation
-- **[API Documentation](Backend/API_DOCUMENTATION.md)** - Complete API reference with all 126 endpoints
-- **[Developer Guide](Backend/DEVELOPER_GUIDE.md)** - Setup, architecture, and contribution guidelines
-- **[Deployment Guide](Backend/DEPLOYMENT_GUIDE.md)** - Production deployment instructions
-
-### Quick Links
-- **Backend Status**: 99% Complete (159/159 tests passing)
-- **API Version**: 1.0.0
-- **Total Endpoints**: 126 (108 implemented + 13 ML stubs + 5 admin)
+- **[API Documentation](Backend/API_DOCUMENTATION.md)** — Complete API reference
+- **[Developer Guide](Backend/DEVELOPER_GUIDE.md)** — Setup, architecture, contribution guidelines
+- **[Deployment Guide](Backend/DEPLOYMENT_GUIDE.md)** — Production deployment instructions
 
 ---
 
@@ -140,12 +144,15 @@ A comprehensive eco-friendly activity tracking application that helps users moni
 ### Backend Setup
 
 #### Prerequisites
-- .NET 8.0 SDK or later
+- .NET 10 SDK
+- PostgreSQL 14+ (running locally or remotely)
 - Visual Studio 2022 or VS Code
+- (Optional) Firebase credentials for push notifications, SMTP credentials for email
+- (Optional) GGUF model file at `EcoBackend.API/models/` for the AI chatbot
 
 #### Steps
 
-1. **Navigate to the Backend directory**
+1. **Navigate to the API project**
    ```bash
    cd "Backend/EcoBackend.API"
    ```
@@ -157,31 +164,27 @@ A comprehensive eco-friendly activity tracking application that helps users moni
 
 3. **Apply database migrations**
    ```bash
-   cd ../EcoBackend.Infrastructure
-   dotnet ef database update --startup-project ../EcoBackend.API
+   dotnet ef database update --project ../EcoBackend.Infrastructure --startup-project .
    ```
 
 4. **Run the application**
    ```bash
-   cd ../EcoBackend.API
    dotnet run
    ```
 
-The API will be available at `http://localhost:5000`
-
 #### Configuration
 
-Update `appsettings.json` in EcoBackend.API:
+Update `appsettings.json` in `EcoBackend.API`:
 
 ```json
 {
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=eco_db;Username=postgres;Password=your-password"
+  },
   "JWT": {
     "Secret": "your-secret-key-here-min-32-chars-long!",
-    "ValidIssuer": "EcoBackendAPI",
+    "ValidIssuer": "EcoBackend",
     "ValidAudience": "EcoBackendClient"
-  },
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=eco.db"
   }
 }
 ```
@@ -189,9 +192,9 @@ Update `appsettings.json` in EcoBackend.API:
 ### Frontend Setup
 
 #### Prerequisites
-- Flutter SDK (3.0 or later)
+- Flutter SDK (Dart ^3.8.1)
 - Android Studio or Xcode
-- VS Code with Flutter extension
+- VS Code with the Flutter extension
 
 #### Steps
 
@@ -205,160 +208,82 @@ Update `appsettings.json` in EcoBackend.API:
    flutter pub get
    ```
 
-3. **Configure API endpoint**
-   
-   Edit `lib/core/config/api_config.dart`:
-   ```dart
-   class ApiConfig {
-     static const String baseUrl = 'http://your-api-url:5000/api';
-   }
-   ```
-
-4. **Run the application**
+3. **Configure the API endpoint** in the app config / `.env`, then run:
    ```bash
    flutter run
    ```
 
 ## 🔑 API Endpoints
 
-### Overview
-**Total Endpoints**: 126
-- **Users**: 37 endpoints (auth, profile, settings, goals, daily scores)
-- **Activities**: 13 endpoints (categories, types, CRUD, tips, history)
-- **Achievements**: 17 endpoints (badges, challenges, user progress)
-- **Analytics**: 6 endpoints (reports, dashboard, stats, CSV export)
-- **Travel**: 19 endpoints (trips, location points, summaries)
-- **Predictions**: 16 endpoints (13 ML stubs + 3 profile endpoints)
-- **Notifications**: 7 endpoints (push notifications, device tokens)
-- **Admin**: 11 endpoints (health checks, background jobs dashboard)
+**Total**: 129 endpoints across 7 controllers
 
-For complete API documentation with request/response examples, see **[API_DOCUMENTATION.md](Backend/API_DOCUMENTATION.md)**.
+| Module | Endpoints | Description |
+|--------|-----------|-------------|
+| Users | 49 | Auth, profile, settings, goals, daily scores, notifications, leaderboard |
+| Travel | 19 | Trips, location points, summaries |
+| Achievements | 18 | Badges, challenges, user progress |
+| Predictions | 17 | Eco profile, daily logs, ML predictions |
+| Activities | 14 | Categories, types, CRUD, tips, history |
+| Analytics | 6 | Reports, dashboard, stats, CSV export |
+| Chatbot | 6 | Chat, sessions, model status |
 
----
+For complete documentation with request/response examples, see **[API_DOCUMENTATION.md](Backend/API_DOCUMENTATION.md)**.
 
 ---
 
 ## 🧪 Testing
 
-The backend has comprehensive test coverage:
-
 ```bash
-# Run all tests
 cd Backend
 dotnet test
-
-# Results
-✅ 159/159 tests passing
-✅ >70% code coverage
-✅ 7 integration test suites (133 tests)
-✅ 2 unit test suites (26 tests)
 ```
 
-**Test Suites:**
-- UsersEndpointTests (30 tests) - Authentication, profile, settings
-- ActivitiesEndpointTests (44 tests) - Activities CRUD, categories, types
-- AchievementsEndpointTests (17 tests) - Badges, challenges
-- AnalyticsEndpointTests (6 tests) - Reports, stats
-- TravelEndpointTests (30 tests) - Trips, locations
-- PredictionsEndpointTests (6 tests) - ML endpoints
-- ProfilePictureEncryptionServiceTests (20 tests) - AES-256 encryption
-- EmailServiceTests (6 tests) - Email functionality
+**Results**: 159 tests — 145 passing, 14 skipped. The skipped tests cover notification flows that require live Firebase/SMTP credentials.
+
+**Test suites:**
+- Integration: Users, Activities, Achievements, Analytics, Travel, Predictions, Notifications
+- Services: EmailService, NotificationService
 
 ---
 
 ## 🔒 Security Features
 
-- **JWT Authentication** - Token-based authentication with 24-hour validity
-- **Refresh Tokens** - Automatic rotation with 7-day validity
-- **Password Hashing** - ASP.NET Identity with PBKDF2
-- **Profile Picture Encryption** - AES-256-CBC encryption for stored images
-- **Token Revocation** - Secure logout with token cleanup
-- **Email Verification** - Mandatory email verification
-- **Password Reset** - Secure reset via email tokens
-- **CORS Configuration** - Configurable cross-origin policies
-- **File Upload Validation** - Type and size validation, SHA256 filenames
-- **Rate Limiting** - Ready for AspNetCoreRateLimit integration
+- **JWT Authentication** — token-based auth with refresh token rotation
+- **Google Sign-In** — OAuth-based authentication
+- **Password Hashing** — ASP.NET Identity (PBKDF2)
+- **Profile Picture Encryption** — AES-256-CBC for stored images
+- **Token Revocation** — secure logout with token cleanup
+- **Email Verification & Password Reset** — secure email-token flows
+- **File Upload Validation** — type/size validation, hashed filenames
+- **CORS Configuration** — configurable cross-origin policies
 
 ## 📊 Database Schema
 
-The application uses SQLite with **19 database entities**:
+The backend uses **PostgreSQL** with EF Core migrations. Domain entities are organized by area:
 
-**User Management:**
-- User (extends IdentityUser)
-- RefreshToken
-- PasswordResetToken
-- EmailVerificationToken
-
-**Activities:**
-- ActivityCategory
-- ActivityType
-- ActivityLog
-- Tip
-
-**Achievements:**
-- Badge
-- UserBadge
-- Challenge
-- UserChallenge
-
-**Travel:**
-- Trip
-- LocationPoint
-- TravelSummary
-
-**Notifications:**
-- Notification
-- DeviceToken
-
-**User Features:**
-- UserGoal
-- DailyScore
-
-**ML Predictions:**
-- UserEcoProfile
-- DailyLog
-
-## 🤝 Contributing
-
-This project follows **Clean Architecture** principles with comprehensive testing.
-
-**For Development:**
-- See [DEVELOPER_GUIDE.md](Backend/DEVELOPER_GUIDE.md) for setup and guidelines
-- All PRs must maintain >70% test coverage
-- Follow conventional commit messages
-- Ensure all tests pass: `dotnet test`
-
-**For Deployment:**
-- See [DEPLOYMENT_GUIDE.md](Backend/DEPLOYMENT_GUIDE.md) for production deployment
-
-**Migration Context:**
-- Original Django backend is in `Backend2(python)` (legacy)
-- Current ASP.NET Core backend is feature-complete migration
-- Flutter frontend adapted to work with new backend
-
-## 📝 Notes
-
-- The `Backend2(python)` directory contains the original Django implementation
-- Database migrations are managed by Entity Framework Core
-- Static files (profile pictures) are served from the `media` folder
-- The application includes seeded data for testing
+**User Management** — User (extends IdentityUser), RefreshToken, PasswordResetToken, EmailVerificationToken
+**Activities** — ActivityCategory, ActivityType, ActivityLog, Tip
+**Achievements** — Badge, UserBadge, Challenge, UserChallenge
+**Travel** — Trip, LocationPoint, TravelSummary
+**Notifications** — Notification, DeviceToken
+**User Features** — UserGoal, DailyScore
+**ML & Chat** — UserEcoProfile, DailyLog, ChatSession
 
 ## 🐛 Troubleshooting
 
 ### Backend won't start
-- Ensure .NET 8.0 SDK is installed
-- Check if port 5000 is available
-- Verify database migrations are applied
+- Ensure the .NET 10 SDK is installed
+- Verify PostgreSQL is running and the connection string is correct
+- Confirm database migrations are applied
 
 ### Frontend can't connect to API
-- Check API URL in `api_config.dart`
-- Ensure backend is running
-- Verify CORS settings in backend
+- Check the API URL in the app configuration
+- Ensure the backend is running and CORS is configured
 
 ### Database errors
-- Delete `eco.db` and run migrations again
-- Check migration files in `EcoBackend.Infrastructure/Migrations`
+- Verify the PostgreSQL `eco_db` database exists
+- Re-run `dotnet ef database update`
 
 ## 📄 License
 
-This project is for educational purposes.
+This project is developed for educational purposes.

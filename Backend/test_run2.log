@@ -1,0 +1,34 @@
+Test run for D:\Projects\DOTNET\Eco Buddy\Backend\EcoBackend.Tests\bin\Debug\net10.0\EcoBackend.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:08.77]     EcoBackend.Tests.Integration.ActivitiesEndpointTests.GetLogHistory_ShouldReturnGroupedActivities [SKIP]
+[xUnit.net 00:00:08.78]     EcoBackend.Tests.Integration.ActivitiesEndpointTests.GetLogToday_ShouldReturnSameAsTodayActivities [SKIP]
+  Skipped EcoBackend.Tests.Integration.ActivitiesEndpointTests.GetLogHistory_ShouldReturnGroupedActivities [1 ms]
+  Skipped EcoBackend.Tests.Integration.ActivitiesEndpointTests.GetLogToday_ShouldReturnSameAsTodayActivities [1 ms]
+[xUnit.net 00:00:09.45]     EcoBackend.Tests.Integration.ActivitiesEndpointTests.GetLogSummary_ShouldReturnSummary [SKIP]
+  Skipped EcoBackend.Tests.Integration.ActivitiesEndpointTests.GetLogSummary_ShouldReturnSummary [1 ms]
+[xUnit.net 00:00:12.46]     EcoBackend.Tests.Integration.NotificationsEndpointTests.MarkAsRead_ShouldReturn404_ForNonexistentNotification [SKIP]
+[xUnit.net 00:00:12.46]     EcoBackend.Tests.Integration.NotificationsEndpointTests.DeactivateDeviceToken_ShouldReturn404_ForNonexistentToken [SKIP]
+[xUnit.net 00:00:12.46]     EcoBackend.Tests.Integration.NotificationsEndpointTests.SendTestNotification_ShouldWork_InDevelopment [SKIP]
+[xUnit.net 00:00:12.46]     EcoBackend.Tests.Integration.NotificationsEndpointTests.GetNotifications_ShouldReturn401_WhenNotAuthenticated [SKIP]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.MarkAsRead_ShouldReturn404_ForNonexistentNotification [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.DeactivateDeviceToken_ShouldReturn404_ForNonexistentToken [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.SendTestNotification_ShouldWork_InDevelopment [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.GetNotifications_ShouldReturn401_WhenNotAuthenticated [1 ms]
+[xUnit.net 00:00:12.46]     EcoBackend.Tests.Integration.NotificationsEndpointTests.RegisterAndDeactivateDeviceToken_ShouldWork [SKIP]
+[xUnit.net 00:00:12.47]     EcoBackend.Tests.Integration.NotificationsEndpointTests.GetNotifications_WithDefaultPagination_ShouldWork [SKIP]
+[xUnit.net 00:00:12.47]     EcoBackend.Tests.Integration.NotificationsEndpointTests.RegisterDeviceToken_ShouldReturn401_WhenNotAuthenticated [SKIP]
+[xUnit.net 00:00:12.47]     EcoBackend.Tests.Integration.NotificationsEndpointTests.MarkAllAsRead_ShouldSucceed [SKIP]
+[xUnit.net 00:00:12.47]     EcoBackend.Tests.Integration.NotificationsEndpointTests.RegisterDeviceToken_ShouldSucceed [SKIP]
+[xUnit.net 00:00:12.47]     EcoBackend.Tests.Integration.NotificationsEndpointTests.GetNotifications_ShouldReturnPaginatedList [SKIP]
+[xUnit.net 00:00:12.47]     EcoBackend.Tests.Integration.NotificationsEndpointTests.DeleteNotification_ShouldReturn404_ForNonexistent [SKIP]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.RegisterAndDeactivateDeviceToken_ShouldWork [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.GetNotifications_WithDefaultPagination_ShouldWork [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.RegisterDeviceToken_ShouldReturn401_WhenNotAuthenticated [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.MarkAllAsRead_ShouldSucceed [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.RegisterDeviceToken_ShouldSucceed [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.GetNotifications_ShouldReturnPaginatedList [1 ms]
+  Skipped EcoBackend.Tests.Integration.NotificationsEndpointTests.DeleteNotification_ShouldReturn404_ForNonexistent [1 ms]
+Results File: D:\Projects\DOTNET\Eco Buddy\Backend\TestResults_Run2\test_results2.trx
+
+Passed!  - Failed:     0, Passed:   145, Skipped:    14, Total:   159, Duration: 20 s - EcoBackend.Tests.dll (net10.0)
+EXIT=0

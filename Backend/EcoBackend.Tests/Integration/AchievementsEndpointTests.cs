@@ -8,49 +8,30 @@ namespace EcoBackend.Tests.Integration;
 /// <summary>
 /// Integration tests for Achievements API endpoints (badges, challenges)
 /// </summary>
+[Collection("Integration")]
 public class AchievementsEndpointTests : IAsyncLifetime
 {
+    private readonly IntegrationTestFixture _fixture;
     private HttpClient _client = null!;
-    private CustomWebApplicationFactory _factory = null!;
+    private CustomWebApplicationFactory _factory => _fixture.Factory;
+
+    public AchievementsEndpointTests(IntegrationTestFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     public async Task InitializeAsync()
     {
-        _factory = new CustomWebApplicationFactory($"AchievementsTests_{Guid.NewGuid()}");
-        _client = _factory.CreateClient();
-        await RegisterAndAuthenticateAsync();
+        _client = await _fixture.CreateAuthenticatedClientAsync(
+            email: "achieveuser@example.com",
+            username: "achieveuser",
+            fullName: "Achieve User");
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
         _client?.Dispose();
-        await _factory.DisposeAsync();
-    }
-
-    private async Task RegisterAndAuthenticateAsync()
-    {
-        await _client.PostAsJsonAsync("/api/users/register", new
-        {
-            email = "achieveuser@example.com",
-            username = "achieveuser",
-            password = "SecureP@ssw0rd123!",
-            fullName = "Achieve User"
-        });
-
-        var loginResponse = await _client.PostAsJsonAsync("/api/users/login", new
-        {
-            email = "achieveuser@example.com",
-            password = "SecureP@ssw0rd123!"
-        });
-
-        if (loginResponse.IsSuccessStatusCode)
-        {
-            var loginResult = await loginResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            if (loginResult != null && loginResult.ContainsKey("access"))
-            {
-                _client.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult["access"]?.ToString());
-            }
-        }
+        return Task.CompletedTask;
     }
 
     // ========== Badges ==========

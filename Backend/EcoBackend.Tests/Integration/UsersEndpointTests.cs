@@ -12,22 +12,28 @@ namespace EcoBackend.Tests.Integration;
 /// <summary>
 /// Integration tests for Users API endpoints (registration, login, profile, goals, daily scores, etc.)
 /// </summary>
+[Collection("Integration")]
 public class UsersEndpointTests : IAsyncLifetime
 {
+    private readonly IntegrationTestFixture _fixture;
     private HttpClient _client = null!;
-    private CustomWebApplicationFactory _factory = null!;
+    private CustomWebApplicationFactory _factory => _fixture.Factory;
 
-    public async Task InitializeAsync()
+    public UsersEndpointTests(IntegrationTestFixture fixture)
     {
-        _factory = new CustomWebApplicationFactory($"UsersTests_{Guid.NewGuid()}");
-        _client = _factory.CreateClient();
-        await Task.CompletedTask;
+        _fixture = fixture;
     }
 
-    public async Task DisposeAsync()
+    public Task InitializeAsync()
+    {
+        _client = _factory.CreateClient();
+        return Task.CompletedTask;
+    }
+
+    public Task DisposeAsync()
     {
         _client?.Dispose();
-        await _factory.DisposeAsync();
+        return Task.CompletedTask;
     }
 
     private async Task<(string accessToken, string refreshToken, int userId)> RegisterAndLoginAsync(

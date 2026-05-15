@@ -20,68 +20,40 @@ public class BackgroundJobService
     }
     
     /// <summary>
-    /// Calculate and update daily streaks for all users
-    /// Runs every day at midnight UTC
+    /// Reconcile streaks for all users once a day. Streaks are now authoritative
+    /// from activity history (see StreakCalculator) — this job is a safety-net
+    /// that runs RecomputeAsync over every user, plus fires weekly-milestone
+    /// notifications for streaks that crossed a multiple of 7 today.
     /// </summary>
     public async Task CalculateDailyStreaksAsync()
     {
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<EcoDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-        
-        _logger.LogInformation("Starting daily streak calculation...");
-        
-        var today = DateTime.UtcNow.Date;
-        var yesterday = today.AddDays(-1);
-        
+        var notificationService = scope.ServiceProvider.GetRequiredService<NotificationService>();
+
+        _logger.LogInformation("Starting daily streak reconciliation...");
+
         var users = await userManager.Users.ToListAsync();
-        int streaksUpdated = 0;
-        int streaksReset = 0;
-        
+        int notified = 0;
+
         foreach (var user in users)
         {
-            // Check if user was active yesterday (had activities or daily score)
-            var yesterdayActivity = await context.Activities
-                .AnyAsync(a => a.UserId == user.Id && a.ActivityDate.Date == yesterday);
-            
-            var yesterdayScore = await context.DailyScores
-                .AnyAsync(ds => ds.UserId == user.Id && ds.Date.Date == yesterday);
-            
-            if (yesterdayActivity || yesterdayScore)
+            var previousStreak = user.CurrentStreak;
+            await StreakCalculator.RecomputeAsync(context, user.Id);
+            await context.Entry(user).ReloadAsync();
+
+            if (user.CurrentStreak > previousStreak
+                && user.CurrentStreak > 0
+                && user.CurrentStreak % 7 == 0)
             {
-                // User was active - increment streak
-                user.CurrentStreak++;
-                
-                // Update longest streak if current exceeds it
-                if (user.CurrentStreak > user.LongestStreak)
-                {
-                    user.LongestStreak = user.CurrentStreak;
-                }
-                
-                streaksUpdated++;
-                
-                // Send streak milestone notifications
-                if (user.CurrentStreak % 7 == 0) // Weekly milestone
-                {
-                    var notificationService = scope.ServiceProvider.GetRequiredService<NotificationService>();
-                    await notificationService.SendStreakNotificationAsync(user.Id, user.CurrentStreak);
-                }
-            }
-            else
-            {
-                // User was not active - reset streak
-                if (user.CurrentStreak > 0)
-                {
-                    user.CurrentStreak = 0;
-                    streaksReset++;
-                }
+                await notificationService.SendStreakNotificationAsync(user.Id, user.CurrentStreak);
+                notified++;
             }
         }
-        
-        await context.SaveChangesAsync();
-        
+
         _logger.LogInformation(
-            $"Daily streak calculation complete. Updated: {streaksUpdated}, Reset: {streaksReset}"
+            $"Daily streak reconciliation complete. Users: {users.Count}, milestone notifications: {notified}"
         );
     }
     

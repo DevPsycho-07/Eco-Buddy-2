@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/activity_service.dart';
 import '../../services/guest_service.dart';
 
@@ -134,17 +135,248 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
 
   Future<void> _loadRecentActivities() async {
     if (_isGuestMode) return; // Don't load for guests
-    
+
     try {
       final activities = await ActivityService.getTodayActivities();
       if (mounted) {
+        final seen = <int>{};
+        final deduped = <Activity>[];
+        for (final a in activities) {
+          if (seen.add(a.activityTypeId)) {
+            deduped.add(a);
+            if (deduped.length == 3) break;
+          }
+        }
         setState(() {
-          _recentlyLogged = activities.take(3).toList();
+          _recentlyLogged = deduped;
         });
       }
     } catch (e) {
       // Silently fail for recent activities
     }
+  }
+
+  static const _rememberedQuantityPrefix = 'activity_qty_';
+
+  /// Sensible per-unit defaults so the sheet doesn't open at "1" for everything.
+  double _smartDefaultFor(String impactUnit) {
+    final u = impactUnit.toLowerCase().trim();
+    if (u.contains('km')) return 5.0;
+    if (u.contains('kwh')) return 1.0;
+    if (u.contains('meal')) return 1.0;
+    if (u.contains('hour')) return 1.0;
+    if (u.contains('kg')) return 0.5;
+    if (u.contains('liter') || u.contains('litre') || u == 'l') return 5.0;
+    if (u.contains('shower')) return 1.0;
+    return 1.0;
+  }
+
+  Future<double?> _loadRememberedQuantity(int activityTypeId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getDouble('$_rememberedQuantityPrefix$activityTypeId');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _saveRememberedQuantity(int activityTypeId, double qty) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('$_rememberedQuantityPrefix$activityTypeId', qty);
+    } catch (_) {
+      // Best-effort; not critical.
+    }
+  }
+
+  /// Bottom sheet asking for quantity (and optional notes) before logging.
+  /// Pre-fills with the last quantity used for this activity type, or a
+  /// per-unit smart default.
+  Future<void> _showQuickLogSheet(BuildContext context, ActivityType activityType) async {
+    if (_isGuestMode) {
+      _showGuestModeDialog();
+      return;
+    }
+
+    final remembered = await _loadRememberedQuantity(activityType.id);
+    if (!context.mounted) return;
+
+    final initialQty = remembered ?? _smartDefaultFor(activityType.impactUnit);
+    final qtyController = TextEditingController(
+      text: initialQty == initialQty.roundToDouble()
+          ? initialQty.toStringAsFixed(0)
+          : initialQty.toString(),
+    );
+    final notesController = TextEditingController();
+    bool showNotes = false;
+    bool submitting = false;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isGreen = activityType.isEcoFriendly;
+    final accent = isGreen ? Colors.green : Colors.orange;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final viewInsets = MediaQuery.of(sheetContext).viewInsets.bottom;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + viewInsets),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(_getActivityIcon(activityType.icon), color: accent),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              activityType.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '${activityType.co2Impact >= 0 ? '+' : ''}${activityType.co2Impact.toStringAsFixed(2)} kg CO₂ per ${activityType.impactUnit}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[isDark ? 400 : 600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: qtyController,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Amount',
+                      suffixText: activityType.impactUnit,
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF2A2A2A) : Colors.grey[100],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (!showNotes)
+                    TextButton.icon(
+                      onPressed: () => setSheetState(() => showNotes = true),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add notes'),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                    )
+                  else
+                    TextField(
+                      controller: notesController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: 'Notes (optional)',
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF2A2A2A) : Colors.grey[100],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              final parsed = double.tryParse(qtyController.text.trim());
+                              if (parsed == null || parsed <= 0) {
+                                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Enter a positive amount'),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                return;
+                              }
+                              setSheetState(() => submitting = true);
+                              await _saveRememberedQuantity(activityType.id, parsed);
+                              if (!sheetContext.mounted) return;
+                              Navigator.pop(sheetContext);
+                              await _logActivity(
+                                activityType,
+                                quantity: parsed,
+                                notes: notesController.text.trim().isEmpty
+                                    ? null
+                                    : notesController.text.trim(),
+                              );
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: submitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Log Activity',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    qtyController.dispose();
+    notesController.dispose();
   }
 
   Future<void> _logActivity(ActivityType activityType, {double quantity = 1.0, String? notes}) async {
@@ -418,11 +650,11 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
                             avatar: Icon(_getCategoryIcon(activity.categoryName), size: 18),
                             label: Text(activity.activityTypeName),
                             onPressed: () {
-                              // Find the activity type and log it
+                              // Find the activity type and open the quick-log sheet for it
                               for (final cat in _categories) {
                                 final type = cat.activityTypes.where((t) => t.id == activity.activityTypeId).firstOrNull;
                                 if (type != null) {
-                                  _logActivity(type);
+                                  _showQuickLogSheet(context, type);
                                   break;
                                 }
                               }
@@ -781,7 +1013,7 @@ class _ActivityLogPageState extends State<ActivityLogPage> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.add_circle, color: Colors.green),
-                onPressed: () => _logActivity(activityType),
+                onPressed: () => _showQuickLogSheet(context, activityType),
               ),
             ],
           ),

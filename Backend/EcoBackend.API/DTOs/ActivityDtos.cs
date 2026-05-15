@@ -1,5 +1,7 @@
 namespace EcoBackend.API.DTOs;
 
+using System.Text.Json.Serialization;
+
 public class ActivityCategoryDto
 {
     public int Id { get; set; }
@@ -28,6 +30,12 @@ public class ActivityDto
     public int Id { get; set; }
     public int UserId { get; set; }
     public int ActivityTypeId { get; set; }
+    [JsonPropertyName("activity_type")]
+    public int ActivityType { get; set; }
+    [JsonPropertyName("activity_type_name")]
+    public string ActivityTypeName { get; set; } = string.Empty;
+    [JsonPropertyName("category_name")]
+    public string CategoryName { get; set; } = string.Empty;
     public double Quantity { get; set; }
     public string Unit { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
@@ -39,7 +47,8 @@ public class ActivityDto
     public DateTime ActivityDate { get; set; }
     public TimeSpan? ActivityTime { get; set; }
     public bool IsAutoDetected { get; set; }
-    public ActivityTypeDto? ActivityType { get; set; }
+    [JsonPropertyName("activity_type_details")]
+    public ActivityTypeDto? ActivityTypeDetails { get; set; }
 }
 
 public class ActivityCreateDto

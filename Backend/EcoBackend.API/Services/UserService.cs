@@ -182,6 +182,13 @@ public class UserService
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) return null;
+
+        if (int.TryParse(userId, out var userIdInt))
+        {
+            await StreakCalculator.ReconcileAsync(_context, userIdInt);
+            await _context.Entry(user).ReloadAsync();
+        }
+
         return MapToUserDto(user);
     }
 
@@ -429,6 +436,8 @@ public class UserService
 
     public async Task<object?> GetDashboardAsync(int userId)
     {
+        await StreakCalculator.ReconcileAsync(_context, userId);
+
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null) return null;
 
@@ -670,12 +679,18 @@ public class UserService
         try
         {
             var googleClientId = _configuration["Authentication:Google:ClientId"];
-            var validationSettings = string.IsNullOrEmpty(googleClientId)
-                ? null
-                : new Google.Apis.Auth.GoogleJsonWebSignature.ValidationSettings
-                  { Audience = new[] { googleClientId } };
-
-            payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(idTokenString, validationSettings);
+            if (string.IsNullOrEmpty(googleClientId))
+            {
+                payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(idTokenString);
+            }
+            else
+            {
+                var validationSettings = new Google.Apis.Auth.GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = new[] { googleClientId }
+                };
+                payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(idTokenString, validationSettings);
+            }
         }
         catch (Exception ex)
         {

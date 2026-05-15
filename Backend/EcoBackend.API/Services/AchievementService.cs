@@ -291,6 +291,8 @@ public class AchievementService
 
     public async Task<object> GetSummaryAsync(int userId)
     {
+        await StreakCalculator.ReconcileAsync(_context, userId);
+
         var user = await _context.Users.FindAsync(userId);
         if (user == null) return new { error = "User not found" };
 

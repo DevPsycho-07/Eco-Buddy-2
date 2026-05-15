@@ -195,6 +195,8 @@ public class ActivityService
 
         _context.Activities.Remove(activity);
         await _context.SaveChangesAsync();
+
+        await StreakCalculator.RecomputeAsync(_context, userId);
         return true;
     }
 
@@ -402,6 +404,8 @@ public class ActivityService
         user.CalculateLevel();
 
         await _context.SaveChangesAsync();
+
+        await StreakCalculator.RecomputeAsync(_context, userId);
     }
 
     private ActivityDto MapToActivityDto(Activity activity)
@@ -411,6 +415,9 @@ public class ActivityService
             Id = activity.Id,
             UserId = activity.UserId,
             ActivityTypeId = activity.ActivityTypeId,
+            ActivityType = activity.ActivityTypeId,
+            ActivityTypeName = activity.ActivityType?.Name ?? string.Empty,
+            CategoryName = activity.ActivityType?.Category?.Name ?? string.Empty,
             Quantity = activity.Quantity,
             Unit = activity.Unit,
             Notes = activity.Notes,
@@ -422,7 +429,7 @@ public class ActivityService
             ActivityDate = activity.ActivityDate,
             ActivityTime = activity.ActivityTime,
             IsAutoDetected = activity.IsAutoDetected,
-            ActivityType = activity.ActivityType == null ? null! : new ActivityTypeDto
+            ActivityTypeDetails = activity.ActivityType == null ? null! : new ActivityTypeDto
             {
                 Id = activity.ActivityType.Id,
                 CategoryId = activity.ActivityType.CategoryId,

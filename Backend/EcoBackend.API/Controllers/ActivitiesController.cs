@@ -60,7 +60,8 @@ public class ActivitiesController : ControllerBase
         if (!string.IsNullOrEmpty(search))
         {
             activities = activities.Where(a =>
-                (a.ActivityType?.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.ActivityTypeName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.ActivityTypeDetails?.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (a.Notes?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
             ).ToList();
         }

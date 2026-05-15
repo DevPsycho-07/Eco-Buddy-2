@@ -59,11 +59,15 @@ public class NotificationService
                 
                 if (FirebaseApp.DefaultInstance == null)
                 {
+                    using var credentialStream = File.OpenRead(credentialPath);
+#pragma warning disable CS0618 // FromStream is the documented Firebase init path; the recommended CredentialFactory replacement requires an async refactor we can do later.
+                    var credential = GoogleCredential.FromStream(credentialStream);
+#pragma warning restore CS0618
                     FirebaseApp.Create(new AppOptions
                     {
-                        Credential = GoogleCredential.FromFile(credentialPath)
+                        Credential = credential
                     });
-                    
+
                     _firebaseInitialized = true;
                     _logger.LogInformation("Firebase Admin SDK initialized successfully");
                 }

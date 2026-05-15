@@ -8,11 +8,13 @@ class EcoProfileService {
   static final _dio = sl<DioClient>().dio;
   static const String baseUrl = ApiConfig.baseUrl;
 
-  /// Check if user has completed eco profile setup
+  /// Check if user has completed eco profile setup.
+  /// Backend returns 204 No Content (or 404) when the user has no profile yet,
+  /// so a successful response only counts when it carries an actual profile body.
   static Future<bool> hasCompletedSetup() async {
     try {
-      await _dio.get('$baseUrl/predictions/profile');
-      return true;
+      final response = await _dio.get('$baseUrl/predictions/profile');
+      return response.statusCode == 200 && response.data != null;
     } catch (e) {
       return false;
     }
@@ -64,7 +66,8 @@ class EcoProfileService {
         },
       );
 
-      if (response.statusCode == 201) {
+      final status = response.statusCode ?? 0;
+      if (status >= 200 && status < 300) {
         return {
           'success': true,
           'data': response.data,

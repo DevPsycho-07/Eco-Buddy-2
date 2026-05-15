@@ -35,6 +35,8 @@ public class AnalyticsService
 
     public async Task<object> GetDashboardAsync(int userId)
     {
+        await StreakCalculator.ReconcileAsync(_context, userId);
+
         var today = DateTime.UtcNow.Date;
         var weekStart = GetStartOfWeek(today);
         var monthStart = new DateTime(today.Year, today.Month, 1);

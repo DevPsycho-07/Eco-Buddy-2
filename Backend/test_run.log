@@ -1,0 +1,7 @@
+Test run for D:\Projects\DOTNET\Eco Buddy\Backend\EcoBackend.Tests\bin\Debug\net10.0\EcoBackend.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+The active test run was aborted. Reason: Test host process crashed
+Results File: D:\Projects\DOTNET\Eco Buddy\Backend\TestResults_Run\test_results.trx
+
+Passed!  - Failed:     0, Passed:    10, Skipped:     0, Total:    10, Duration: 19 m 25 s - EcoBackend.Tests.dll (net10.0)
+Test Run Aborted.

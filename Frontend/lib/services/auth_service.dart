@@ -353,9 +353,20 @@ class AuthService {
       } else {
         throw Exception('No tokens received from server');
       }
+    } on DioException catch (e) {
+      AppLogger.error('❌ Google Sign-In: DioException status=${e.response?.statusCode} body=${e.response?.data}');
+      final body = e.response?.data;
+      String? backendError;
+      if (body is Map && body['error'] is String) {
+        backendError = body['error'] as String;
+      }
+      final fallback = e.response?.statusCode == 401
+          ? 'Could not verify your Google account. Please try again.'
+          : 'Google sign-in failed. Please check your connection and try again.';
+      return {'success': false, 'error': backendError ?? fallback};
     } catch (e) {
       AppLogger.error('❌ Google Sign-In: exception = $e');
-      return {'success': false, 'error': e.toString()};
+      return {'success': false, 'error': 'Google sign-in failed. Please try again.'};
     }
   }
 }

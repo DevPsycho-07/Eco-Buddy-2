@@ -135,19 +135,26 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure Hangfire
+// Configure Hangfire (skip server in Testing env so the test host doesn't poll a job queue)
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
     .UseMemoryStorage());
 
-builder.Services.AddHangfireServer();
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddHangfireServer();
+}
 
 // Register services
 builder.Services.AddHttpClient(); // required by ChatbotService
 builder.Services.AddSingleton<EcoBackend.API.Services.LlamaModelService>();
-builder.Services.AddHostedService<EcoBackend.API.Services.LlamaModelLoaderService>();
+// LLama model is multi-GB and useless in tests — skip its loader hosted service in Testing env.
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddHostedService<EcoBackend.API.Services.LlamaModelLoaderService>();
+}
 builder.Services.AddScoped<EcoBackend.API.Services.AchievementService>();
 builder.Services.AddScoped<EcoBackend.API.Services.EmailService>();
 builder.Services.AddScoped<EcoBackend.API.Services.NotificationService>();
@@ -158,6 +165,10 @@ builder.Services.AddScoped<EcoBackend.API.Services.AnalyticsService>();
 builder.Services.AddScoped<EcoBackend.API.Services.TravelService>();
 builder.Services.AddScoped<EcoBackend.API.Services.UserService>();
 builder.Services.AddSingleton<EcoBackend.API.Services.EcoScorePredictorService>();
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddHostedService<EcoBackend.API.Services.EcoScoreModelLoaderService>();
+}
 builder.Services.AddScoped<EcoBackend.API.Services.PredictionService>();
 builder.Services.AddScoped<EcoBackend.API.Services.DailyScoreService>();
 builder.Services.AddScoped<EcoBackend.API.Services.GoalService>();
@@ -251,36 +262,39 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
 }
 
-// Configure recurring background jobs
-RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
-    "calculate-daily-streaks",
-    service => service.CalculateDailyStreaksAsync(),
-    "0 0 * * *", // Daily at midnight UTC
-    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+// Configure recurring background jobs (skipped in Testing env — no Hangfire server there)
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+        "calculate-daily-streaks",
+        service => service.CalculateDailyStreaksAsync(),
+        "0 0 * * *", // Daily at midnight UTC
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
-    "generate-weekly-reports",
-    service => service.GenerateWeeklyReportsAsync(),
-    "0 1 * * 1", // Every Monday at 1 AM UTC
-    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+    RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+        "generate-weekly-reports",
+        service => service.GenerateWeeklyReportsAsync(),
+        "0 1 * * 1", // Every Monday at 1 AM UTC
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
-    "generate-monthly-reports",
-    service => service.GenerateMonthlyReportsAsync(),
-    "0 2 1 * *", // First day of month at 2 AM UTC
-    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+    RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+        "generate-monthly-reports",
+        service => service.GenerateMonthlyReportsAsync(),
+        "0 2 1 * *", // First day of month at 2 AM UTC
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
-    "check-badge-requirements",
-    service => service.CheckBadgeRequirementsAsync(),
-    "0 */6 * * *", // Every 6 hours
-    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+    RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+        "check-badge-requirements",
+        service => service.CheckBadgeRequirementsAsync(),
+        "0 */6 * * *", // Every 6 hours
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
-    "cleanup-expired-tokens",
-    service => service.CleanupExpiredTokensAsync(),
-    "0 3 * * *", // Daily at 3 AM UTC
-    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+    RecurringJob.AddOrUpdate<EcoBackend.API.Services.BackgroundJobService>(
+        "cleanup-expired-tokens",
+        service => service.CleanupExpiredTokensAsync(),
+        "0 3 * * *", // Daily at 3 AM UTC
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+}
 
 // Initialize default encrypted profile picture
 var encryptionService = app.Services.GetRequiredService<EcoBackend.API.Services.ProfilePictureEncryptionService>();
